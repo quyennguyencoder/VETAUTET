@@ -1,2 +1,127 @@
 server:
-  port: 8000
+  port: 1122
+  tomcat:
+    accept-count: 2000
+    max-connections: 10000
+
+
+spring:
+  #  main:
+  #    lazy-initialization: true
+  # application
+  application:
+    name: vetautet
+  #DBS
+  datasource:
+    hikari:
+      maximum-pool-size: 100
+      minimum-idle: 20
+      connection-timeout: 3000
+      validation-timeout: 1000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      leak-detection-threshold: 5000
+    url: jdbc:mysql://localhost:3316/vetautet
+    username: root
+    password: root1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+
+  jpa:
+    database: mysql
+    show-sql: true
+    hibernate:
+      ddl-auto: none  # Không tự động tạo/ cập nhật bảng thay vì update
+  #    properties:
+  #      hibernate:
+  #        format_sql: true
+  #        use_sql_comments: true
+  jackson:
+    serialization:
+      indent-output: true
+  # Redis server connection settings
+  data:
+    redis:
+      host: 127.0.0.1 # Host of the Redis server
+      port: 6319 # Port of the Redis server for connection
+      password: ""  # Password for connecting to the Redis server (default is empty)
+      lettuce:
+        pool: # Connection pool settings
+          max-active: 10 # Maximum number of active connections in the pool (uses -1 for no limit)
+          max-idle: 5 # Maximum number of idle connections in the pool
+          min-idle: 5 # Minimum number of idle connections in the pool
+      #          max-wait: -1ms # Maximum wait time to get a connection from the pool (uses -1 for no limit)
+      connect-timeout: 30000 # Connection timeout (in milliseconds)
+  #    redis:
+  #      sentinel:
+  #        master: mymaster  # Đặt đúng tên master theo Sentinel config
+  #        nodes:
+  #          - localhost:26379
+  #          - localhost:26380
+  #          - localhost:26381
+  #      password: 123456
+  threads:
+    virtual:
+      enabled: true
+  kafka:
+    bootstrap-servers: localhost:9094
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: order-consumer-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "com.nguyenquyen.vetautet.ddd.infrastructure.mq"
+resilience4j:
+  circuitbreaker:
+    instances:
+      checkRandom:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        #        slidingWindowType: TIME_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+
+  ratelimiter:
+    instances:
+      backendA:
+        limitForPeriod: 2
+        limitRefreshPeriod: 10s
+        timeoutDuration: 0
+        registerHealthIndicator: true
+        eventConsumerBufferSize: 100
+      backendB:
+        limitForPeriod: 5
+        limitRefreshPeriod: 10s
+        timeoutDuration: 3s
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include:
+          - '*'
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        "[http.server.requests]": true
+        "[hikaricp.connections.acquire]": true
+      percentiles:
+        "[http.server.requests]": 0.5, 0.95, 0.99
+      slo:
+        "[http.server.requests]": 100ms, 500ms, 1s, 2s, 5s

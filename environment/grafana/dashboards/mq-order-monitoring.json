@@ -1,0 +1,429 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 100, "title": "HTTP — /order/mq (Async Kafka)", "type": "row" },
+
+    {
+      "id": 1, "type": "stat",
+      "title": "RPS — /order/mq",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 500 },
+            { "color": "red", "value": 1000 }
+          ]},
+          "unit": "reqps"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\"}[30s]))",
+        "legendFormat": "RPS /order/mq"
+      }]
+    },
+
+    {
+      "id": 2, "type": "stat",
+      "title": "Error Rate — /order/mq",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.01 },
+            { "color": "red", "value": 0.05 }
+          ]},
+          "unit": "percentunit"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\", status=~\"5..\"}[30s])) / sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\"}[30s]))",
+        "legendFormat": "Error Rate"
+      }]
+    },
+
+    {
+      "id": 3, "type": "stat",
+      "title": "p95 Latency — /order/mq",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 500 },
+            { "color": "red", "value": 1000 }
+          ]},
+          "unit": "ms"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[30s])) by (le)) * 1000",
+        "legendFormat": "p95"
+      }]
+    },
+
+    {
+      "id": 4, "type": "stat",
+      "title": "p99 Latency — /order/mq",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 800 },
+            { "color": "red", "value": 2000 }
+          ]},
+          "unit": "ms"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[30s])) by (le)) * 1000",
+        "legendFormat": "p99"
+      }]
+    },
+
+    {
+      "id": 5, "type": "stat",
+      "title": "Active HikariCP Connections",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 30 },
+            { "color": "red", "value": 45 }
+          ]},
+          "unit": "short"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "hikaricp_connections_active{application=\"xxxx.com\"}",
+        "legendFormat": "Active"
+      }]
+    },
+
+    {
+      "id": 6, "type": "stat",
+      "title": "Pending HikariCP",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 5 },
+            { "color": "red", "value": 20 }
+          ]},
+          "unit": "short"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "hikaricp_connections_pending{application=\"xxxx.com\"}",
+        "legendFormat": "Pending"
+      }]
+    },
+
+    {
+      "id": 7, "type": "timeseries",
+      "title": "HTTP Latency Percentiles — /order/mq",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[30s])) by (le)) * 1000",
+          "legendFormat": "p50"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[30s])) by (le)) * 1000",
+          "legendFormat": "p95"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[30s])) by (le)) * 1000",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+
+    {
+      "id": 8, "type": "timeseries",
+      "title": "RPS — /order/mq vs /order/cas (So sánh)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } }
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\"}[30s]))",
+          "legendFormat": "MQ (async)"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\"}[30s]))",
+          "legendFormat": "CAS (sync)"
+        }
+      ]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 }, "id": 101, "title": "Kafka — Producer & Consumer", "type": "row" },
+
+    {
+      "id": 9, "type": "timeseries",
+      "title": "Kafka Producer — Records Sent / s",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "sum(rate(kafka_producer_record_send_total{application=\"xxxx.com\"}[30s]))",
+        "legendFormat": "Records Sent/s"
+      }]
+    },
+
+    {
+      "id": 10, "type": "timeseries",
+      "title": "Kafka Consumer — Records Consumed / s",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "sum(rate(kafka_consumer_fetch_manager_records_consumed_total{application=\"xxxx.com\"}[30s]))",
+        "legendFormat": "Records Consumed/s"
+      }]
+    },
+
+    {
+      "id": 11, "type": "timeseries",
+      "title": "Kafka Consumer Lag (backlog chưa xử lý)",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "lineWidth": 2 },
+          "color": { "fixedColor": "orange", "mode": "fixed" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 100 },
+            { "color": "red", "value": 500 }
+          ]}
+        }
+      },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "sum(kafka_consumer_fetch_manager_records_lag{application=\"xxxx.com\"})",
+        "legendFormat": "Consumer Lag"
+      }]
+    },
+
+    {
+      "id": 12, "type": "timeseries",
+      "title": "Kafka Listener Processing Time (consumer side)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "rate(spring_kafka_listener_seconds_sum{application=\"xxxx.com\"}[30s]) / rate(spring_kafka_listener_seconds_count{application=\"xxxx.com\"}[30s]) * 1000",
+          "legendFormat": "Avg Consumer Processing Time"
+        }
+      ]
+    },
+
+    {
+      "id": 13, "type": "timeseries",
+      "title": "Kafka Producer Error Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "sum(rate(kafka_producer_record_error_total{application=\"xxxx.com\"}[30s]))",
+        "legendFormat": "Producer Errors/s"
+      }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 }, "id": 102, "title": "HikariCP — DB Connection Pool (Consumer side)", "type": "row" },
+
+    {
+      "id": 14, "type": "timeseries",
+      "title": "HikariCP — Active / Idle / Pending",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "hikaricp_connections_active{application=\"xxxx.com\"}",
+          "legendFormat": "Active"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "hikaricp_connections_idle{application=\"xxxx.com\"}",
+          "legendFormat": "Idle"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "hikaricp_connections_pending{application=\"xxxx.com\"}",
+          "legendFormat": "Pending"
+        }
+      ]
+    },
+
+    {
+      "id": 15, "type": "timeseries",
+      "title": "HikariCP — Connection Acquire Time (ms)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.95, sum(rate(hikaricp_connections_acquire_seconds_bucket{application=\"xxxx.com\"}[30s])) by (le)) * 1000",
+          "legendFormat": "Acquire p95"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.99, sum(rate(hikaricp_connections_acquire_seconds_bucket{application=\"xxxx.com\"}[30s])) by (le)) * 1000",
+          "legendFormat": "Acquire p99"
+        }
+      ]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 39 }, "id": 103, "title": "Redis", "type": "row" },
+
+    {
+      "id": 16, "type": "timeseries",
+      "title": "Redis — Commands / s",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 40 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "rate(redis_commands_processed_total{instance=~\".*6319.*\"}[30s])",
+        "legendFormat": "Commands/s"
+      }]
+    },
+
+    {
+      "id": 17, "type": "timeseries",
+      "title": "Redis — Connected Clients",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 40 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "redis_connected_clients{instance=~\".*6319.*\"}",
+        "legendFormat": "Clients"
+      }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 48 }, "id": 104, "title": "JVM", "type": "row" },
+
+    {
+      "id": 18, "type": "timeseries",
+      "title": "JVM Heap Used",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 49 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "bytes", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "jvm_memory_used_bytes{application=\"xxxx.com\", area=\"heap\"}",
+          "legendFormat": "{{id}}"
+        }
+      ]
+    },
+
+    {
+      "id": 19, "type": "timeseries",
+      "title": "JVM Threads",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 49 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "jvm_threads_live_threads{application=\"xxxx.com\"}",
+          "legendFormat": "Live"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "jvm_threads_daemon_threads{application=\"xxxx.com\"}",
+          "legendFormat": "Daemon"
+        }
+      ]
+    }
+
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "tags": ["mq", "kafka", "order"],
+  "time": { "from": "now-5m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "MQ Order Monitoring (Kafka Async)",
+  "uid": "mq-order-monitor-01",
+  "version": 1
+}

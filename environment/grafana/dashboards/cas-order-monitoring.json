@@ -1,0 +1,458 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 100, "title": "HTTP — /order/cas", "type": "row" },
+
+    {
+      "id": 1, "type": "stat",
+      "title": "RPS (req/s)",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 300 },
+            { "color": "red", "value": 1000 }
+          ]},
+          "unit": "reqps"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "orientation": "auto", "textMode": "auto", "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\"}[30s]))",
+        "legendFormat": "RPS"
+      }]
+    },
+
+    {
+      "id": 2, "type": "stat",
+      "title": "Error Rate",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.01 },
+            { "color": "red", "value": 0.05 }
+          ]},
+          "unit": "percentunit"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\", status=~\"5..\"}[30s])) / sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\"}[30s]))",
+        "legendFormat": "Error %"
+      }]
+    },
+
+    {
+      "id": 3, "type": "stat",
+      "title": "Latency p95",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 0.5 },
+            { "color": "red", "value": 2 }
+          ]},
+          "unit": "s"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[30s])) by (le))",
+        "legendFormat": "p95"
+      }]
+    },
+
+    {
+      "id": 4, "type": "stat",
+      "title": "Latency p99",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red", "value": 3 }
+          ]},
+          "unit": "s"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[30s])) by (le))",
+        "legendFormat": "p99"
+      }]
+    },
+
+    {
+      "id": 5, "type": "stat",
+      "title": "Tomcat Connections",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 5000 },
+            { "color": "red", "value": 9000 }
+          ]},
+          "unit": "short"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "tomcat_connections_current_connections{application=\"xxxx.com\"}",
+        "legendFormat": "Active"
+      }]
+    },
+
+    {
+      "id": 6, "type": "timeseries",
+      "title": "HTTP /order/cas — RPS by outcome",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "error" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\", outcome=\"SUCCESS\"}[15s]))",
+          "legendFormat": "success"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\", outcome=\"SERVER_ERROR\"}[15s]))",
+          "legendFormat": "error"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\", outcome=\"CLIENT_ERROR\"}[15s]))",
+          "legendFormat": "client_error"
+        }
+      ]
+    },
+
+    {
+      "id": 7, "type": "timeseries",
+      "title": "HTTP /order/cas — Latency (p50 / p95 / p99)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[15s])) by (le))",
+          "legendFormat": "p50"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[15s])) by (le))",
+          "legendFormat": "p95"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[15s])) by (le))",
+          "legendFormat": "p99"
+        }
+      ]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 }, "id": 101, "title": "BOTTLENECK — HikariCP DB Connection Pool (max=10)", "type": "row" },
+
+    {
+      "id": 10, "type": "gauge",
+      "title": "Active DB Connections / 10",
+      "description": "Pool size=10. Neu active=10 va pending>0 → DB pool la bottleneck!",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 10,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 7 },
+            { "color": "red", "value": 10 }
+          ]},
+          "unit": "short"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "hikaricp_connections_active{application=\"xxxx.com\"}",
+        "legendFormat": "active"
+      }]
+    },
+
+    {
+      "id": 11, "type": "gauge",
+      "title": "Pending (cho connection)",
+      "description": "So request dang xep hang cho DB connection. > 0 = bottleneck ro rang.",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": {
+          "min": 0, "max": 100,
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "yellow", "value": 1 },
+            { "color": "red", "value": 10 }
+          ]},
+          "unit": "short"
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdLabels": true, "showThresholdMarkers": true },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "hikaricp_connections_pending{application=\"xxxx.com\"}",
+        "legendFormat": "pending"
+      }]
+    },
+
+    {
+      "id": 12, "type": "timeseries",
+      "title": "HikariCP — Active / Idle / Pending over time",
+      "description": "active=10 lien tuc → tang maximum-pool-size trong application.yml",
+      "gridPos": { "h": 6, "w": 12, "x": 12, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "pending" }, "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "active" }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "idle" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "hikaricp_connections_active{application=\"xxxx.com\"}",
+          "legendFormat": "active"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "hikaricp_connections_idle{application=\"xxxx.com\"}",
+          "legendFormat": "idle"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "hikaricp_connections_pending{application=\"xxxx.com\"}",
+          "legendFormat": "pending"
+        }
+      ]
+    },
+
+    {
+      "id": 13, "type": "timeseries",
+      "title": "HikariCP — Acquire Time p95 (thoi gian cho lay connection)",
+      "description": "Neu > 100ms → pool qua nho, can tang maximum-pool-size",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 20 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.95, sum(rate(hikaricp_connections_acquire_seconds_bucket{application=\"xxxx.com\"}[15s])) by (le))",
+          "legendFormat": "acquire p95"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.99, sum(rate(hikaricp_connections_acquire_seconds_bucket{application=\"xxxx.com\"}[15s])) by (le))",
+          "legendFormat": "acquire p99"
+        }
+      ]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 26 }, "id": 102, "title": "MySQL — InnoDB Lock Contention (quan trong voi CAS)", "type": "row" },
+
+    {
+      "id": 20, "type": "timeseries",
+      "title": "InnoDB Row Lock Waits/sec",
+      "description": "CAS dung pessimistic lock → nhieu thread lock cung row. Spike = DB bottleneck.",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 27 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 2 } } },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "rate(mysql_global_status_innodb_row_lock_waits[15s])",
+        "legendFormat": "lock waits/s"
+      }]
+    },
+
+    {
+      "id": 21, "type": "timeseries",
+      "title": "InnoDB Row Lock Wait Time (ms avg)",
+      "description": "Thoi gian trung binh phai cho lock. Cao = DB dang nghen nghiem trong.",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 27 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "mysql_global_status_innodb_row_lock_time_avg",
+        "legendFormat": "avg lock wait ms"
+      }]
+    },
+
+    {
+      "id": 22, "type": "timeseries",
+      "title": "MySQL QPS (queries/sec)",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 27 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 2 } } },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "rate(mysql_global_status_queries[15s])",
+        "legendFormat": "queries/s"
+      }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 }, "id": 103, "title": "Redis — Cache Layer (first filter of CAS)", "type": "row" },
+
+    {
+      "id": 30, "type": "timeseries",
+      "title": "Redis Commands/sec",
+      "description": "Tuong ung voi so LUA script calls. Moi /order/cas = 1-2 Redis calls.",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 35 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 2 } } },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "rate(redis_commands_total[15s])",
+        "legendFormat": "{{cmd}}"
+      }]
+    },
+
+    {
+      "id": 31, "type": "timeseries",
+      "title": "Redis Connected Clients",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 35 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "redis_connected_clients",
+        "legendFormat": "clients"
+      }]
+    },
+
+    {
+      "id": 32, "type": "timeseries",
+      "title": "Redis Memory Used (MB)",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 35 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "decmbytes", "custom": { "lineWidth": 2 } } },
+      "targets": [{
+        "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+        "expr": "redis_memory_used_bytes / 1024 / 1024",
+        "legendFormat": "used MB"
+      }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 42 }, "id": 104, "title": "JVM and System", "type": "row" },
+
+    {
+      "id": 40, "type": "timeseries",
+      "title": "JVM Heap Memory",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 43 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "decmbytes", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "jvm_memory_used_bytes{application=\"xxxx.com\", area=\"heap\"} / 1024 / 1024",
+          "legendFormat": "used"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "jvm_memory_max_bytes{application=\"xxxx.com\", area=\"heap\"} / 1024 / 1024",
+          "legendFormat": "max"
+        }
+      ]
+    },
+
+    {
+      "id": 41, "type": "timeseries",
+      "title": "JVM Threads",
+      "description": "Virtual threads enabled → count co the len cao nhung binh thuong.",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 43 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "jvm_threads_live_threads{application=\"xxxx.com\"}",
+          "legendFormat": "live"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "jvm_threads_daemon_threads{application=\"xxxx.com\"}",
+          "legendFormat": "daemon"
+        }
+      ]
+    },
+
+    {
+      "id": 42, "type": "timeseries",
+      "title": "CPU Usage (%)",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 43 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "custom": { "lineWidth": 2 }, "max": 1 } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "process_cpu_usage{application=\"xxxx.com\"}",
+          "legendFormat": "JVM process"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[15s]))",
+          "legendFormat": "system"
+        }
+      ]
+    }
+
+  ],
+  "refresh": "5s",
+  "schemaVersion": 37,
+  "style": "dark",
+  "tags": ["flash-sale", "cas", "spring-boot"],
+  "time": { "from": "now-5m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Flash Sale — CAS Order Monitoring",
+  "uid": "cas-order-monitoring-v1",
+  "version": 1
+}
