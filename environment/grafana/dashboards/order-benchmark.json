@@ -1,0 +1,419 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 200, "title": "⚡ SO SÁNH — CAS vs MQ", "type": "row" },
+
+    {
+      "id": 201, "type": "timeseries",
+      "title": "RPS — CAS vs MQ (cùng chart)",
+      "description": "MQ cao hơn vì không bị block bởi InnoDB lock. CAS bị serialized tại DB.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "CAS (sync)" },  "properties": [{ "id": "color", "value": { "fixedColor": "red",   "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "MQ (async)" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "sum(irate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\"}[1m]))",
+          "legendFormat": "CAS (sync)"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "sum(irate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\"}[1m]))",
+          "legendFormat": "MQ (async)"
+        }
+      ]
+    },
+
+    {
+      "id": 202, "type": "timeseries",
+      "title": "Latency p95 — CAS vs MQ (cùng chart)",
+      "description": "MQ thấp hơn vì HTTP response chỉ chờ Redis + INSERT nhỏ, không chờ InnoDB lock.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "s", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "CAS p95" }, "properties": [{ "id": "color", "value": { "fixedColor": "red",   "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "MQ p95"  }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "CAS p99" }, "properties": [{ "id": "color", "value": { "fixedColor": "dark-red",   "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "MQ p99"  }, "properties": [{ "id": "color", "value": { "fixedColor": "dark-green", "mode": "fixed" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" }, "legend": { "displayMode": "list", "placement": "bottom" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[15s])) by (le))",
+          "legendFormat": "CAS p95"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[15s])) by (le))",
+          "legendFormat": "MQ p95"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[15s])) by (le))",
+          "legendFormat": "CAS p99"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+          "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[15s])) by (le))",
+          "legendFormat": "MQ p99"
+        }
+      ]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 }, "id": 100, "title": "HTTP — /order/cas (Synchronous)", "type": "row" },
+
+    {
+      "id": 1, "type": "stat", "title": "CAS — RPS",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 300 }, { "color": "red", "value": 700 }] }, "unit": "reqps" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(irate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\"}[1m]))", "legendFormat": "RPS" }]
+    },
+
+    {
+      "id": 2, "type": "stat", "title": "CAS — Error Rate",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.01 }, { "color": "red", "value": 0.05 }] }, "unit": "percentunit" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\", status=~\"5..\"}[30s])) / sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\"}[30s]))", "legendFormat": "Error %" }]
+    },
+
+    {
+      "id": 3, "type": "stat", "title": "CAS — Latency p95",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 2 }] }, "unit": "s" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[15s])) by (le))", "legendFormat": "p95" }]
+    },
+
+    {
+      "id": 4, "type": "stat", "title": "CAS — Latency p99",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 3 }] }, "unit": "s" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[15s])) by (le))", "legendFormat": "p99" }]
+    },
+
+    {
+      "id": 5, "type": "stat", "title": "CAS — Tomcat Connections",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 5000 }, { "color": "red", "value": 9000 }] }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "tomcat_connections_current_connections{application=\"xxxx.com\"}", "legendFormat": "connections" }]
+    },
+
+    {
+      "id": 6, "type": "timeseries", "title": "CAS — RPS by outcome",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "error" },   "properties": [{ "id": "color", "value": { "fixedColor": "red",   "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\", outcome=\"SUCCESS\"}[15s]))",      "legendFormat": "success" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\", outcome=\"SERVER_ERROR\"}[15s]))", "legendFormat": "error" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/cas\", outcome=\"CLIENT_ERROR\"}[15s]))", "legendFormat": "client_error" }
+      ]
+    },
+
+    {
+      "id": 7, "type": "timeseries", "title": "CAS — Latency p50 / p95 / p99",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[15s])) by (le))", "legendFormat": "p50" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[15s])) by (le))", "legendFormat": "p95" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/cas\"}[15s])) by (le))", "legendFormat": "p99" }
+      ]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 }, "id": 110, "title": "HTTP — /order/mq (Async Kafka)", "type": "row" },
+
+    {
+      "id": 11, "type": "stat", "title": "MQ — RPS",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 500 }, { "color": "red", "value": 1000 }] }, "unit": "reqps" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(irate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\"}[1m]))", "legendFormat": "RPS" }]
+    },
+
+    {
+      "id": 12, "type": "stat", "title": "MQ — Error Rate",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.01 }, { "color": "red", "value": 0.05 }] }, "unit": "percentunit" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\", status=~\"5..\"}[30s])) / sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\"}[30s]))", "legendFormat": "Error %" }]
+    },
+
+    {
+      "id": 13, "type": "stat", "title": "MQ — Latency p95",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.3 }, { "color": "red", "value": 1 }] }, "unit": "s" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[15s])) by (le))", "legendFormat": "p95" }]
+    },
+
+    {
+      "id": 14, "type": "stat", "title": "MQ — Latency p99",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 0.5 }, { "color": "red", "value": 2 }] }, "unit": "s" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[15s])) by (le))", "legendFormat": "p99" }]
+    },
+
+    {
+      "id": 15, "type": "stat", "title": "Kafka Consumer Lag",
+      "description": "Số messages đang chờ consumer xử lý. Cao = consumer không kịp.",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 22 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 100 }, { "color": "red", "value": 500 }] }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(kafka_consumer_fetch_manager_records_lag{application=\"xxxx.com\"})", "legendFormat": "lag" }]
+    },
+
+    {
+      "id": 16, "type": "timeseries", "title": "MQ — RPS by outcome",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "error" },   "properties": [{ "id": "color", "value": { "fixedColor": "red",   "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "success" }, "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\", outcome=\"SUCCESS\"}[15s]))",      "legendFormat": "success (queued)" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\", outcome=\"SERVER_ERROR\"}[15s]))", "legendFormat": "error" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(rate(http_server_requests_seconds_count{application=\"xxxx.com\", uri=\"/order/mq\", outcome=\"CLIENT_ERROR\"}[15s]))",  "legendFormat": "client_error (oos)" }
+      ]
+    },
+
+    {
+      "id": 17, "type": "timeseries", "title": "MQ — Latency p50 / p95 / p99",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 26 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.50, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[15s])) by (le))", "legendFormat": "p50" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[15s])) by (le))", "legendFormat": "p95" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.99, sum(rate(http_server_requests_seconds_bucket{application=\"xxxx.com\", uri=\"/order/mq\"}[15s])) by (le))", "legendFormat": "p99" }
+      ]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 33 }, "id": 120, "title": "Kafka — Producer & Consumer", "type": "row" },
+
+    {
+      "id": 21, "type": "timeseries", "title": "Kafka Producer — Sent / s",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(rate(kafka_producer_record_send_total{application=\"xxxx.com\"}[15s]))", "legendFormat": "records sent/s" }]
+    },
+
+    {
+      "id": 22, "type": "timeseries", "title": "Kafka Consumer — Consumed / s",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(rate(kafka_consumer_fetch_manager_records_consumed_total{application=\"xxxx.com\"}[15s]))", "legendFormat": "records consumed/s" }]
+    },
+
+    {
+      "id": 23, "type": "timeseries", "title": "Kafka Consumer Lag (backlog chờ xử lý)",
+      "description": "Spike cao = consumer không kịp tốc độ producer. Nếu lag = 0, consumer healthy.",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 34 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 }, "color": { "fixedColor": "orange", "mode": "fixed" } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "sum(kafka_consumer_fetch_manager_records_lag{application=\"xxxx.com\"})", "legendFormat": "consumer lag" }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 41 }, "id": 130, "title": "HikariCP — DB Connection Pool", "type": "row" },
+
+    {
+      "id": 31, "type": "gauge", "title": "DB Active Connections",
+      "description": "Pool max=50. Active=50 liên tục và pending>0 → pool là bottleneck.",
+      "gridPos": { "h": 6, "w": 4, "x": 0, "y": 42 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "min": 0, "max": 50, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 35 }, { "color": "red", "value": 48 }] }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdMarkers": true },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "hikaricp_connections_active{application=\"xxxx.com\"}", "legendFormat": "active" }]
+    },
+
+    {
+      "id": 32, "type": "gauge", "title": "DB Pending (chờ connection)",
+      "description": "Pending > 0 = requests đang xếp hàng. Đây là dấu hiệu bottleneck pool.",
+      "gridPos": { "h": 6, "w": 4, "x": 4, "y": 42 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "min": 0, "max": 100, "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }, { "color": "red", "value": 10 }] }, "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "showThresholdMarkers": true },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "hikaricp_connections_pending{application=\"xxxx.com\"}", "legendFormat": "pending" }]
+    },
+
+    {
+      "id": 33, "type": "timeseries", "title": "HikariCP — Active / Idle / Pending over time",
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 42 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": {
+        "defaults": { "unit": "short", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "pending" }, "properties": [{ "id": "color", "value": { "fixedColor": "red",    "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "active"  }, "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "idle"    }, "properties": [{ "id": "color", "value": { "fixedColor": "green",  "mode": "fixed" } }] }
+        ]
+      },
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "hikaricp_connections_active{application=\"xxxx.com\"}",  "legendFormat": "active" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "hikaricp_connections_idle{application=\"xxxx.com\"}",    "legendFormat": "idle" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "hikaricp_connections_pending{application=\"xxxx.com\"}", "legendFormat": "pending" }
+      ]
+    },
+
+    {
+      "id": 34, "type": "timeseries", "title": "HikariCP — Acquire Time p95 / p99",
+      "description": "Thời gian chờ lấy connection từ pool. Cao → tăng pool size.",
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 42 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "s", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.95, sum(rate(hikaricp_connections_acquire_seconds_bucket{application=\"xxxx.com\"}[15s])) by (le))", "legendFormat": "acquire p95" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "histogram_quantile(0.99, sum(rate(hikaricp_connections_acquire_seconds_bucket{application=\"xxxx.com\"}[15s])) by (le))", "legendFormat": "acquire p99" }
+      ]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 48 }, "id": 140, "title": "MySQL — InnoDB Lock (bottleneck chính của CAS)", "type": "row" },
+
+    {
+      "id": 41, "type": "timeseries", "title": "InnoDB Row Lock Waits / s",
+      "description": "CAS giữ lock từ UPDATE đến hết transaction. Spike = serialized tại DB.",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 49 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "rate(mysql_global_status_innodb_row_lock_waits[15s])", "legendFormat": "lock waits/s" }]
+    },
+
+    {
+      "id": 42, "type": "timeseries", "title": "InnoDB Row Lock Wait Time (ms avg)",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 49 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "mysql_global_status_innodb_row_lock_time_avg", "legendFormat": "avg lock wait ms" }]
+    },
+
+    {
+      "id": 43, "type": "timeseries", "title": "MySQL QPS (queries/s)",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 49 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "rate(mysql_global_status_queries[15s])", "legendFormat": "queries/s" }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 56 }, "id": 150, "title": "Redis — Cache Layer", "type": "row" },
+
+    {
+      "id": 51, "type": "timeseries", "title": "Redis Commands / s",
+      "description": "Mỗi order = 1-2 LUA calls. MQ có thêm lookup cho consumer rollback.",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 57 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "ops", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "rate(redis_commands_total[15s])", "legendFormat": "{{cmd}}" }]
+    },
+
+    {
+      "id": 52, "type": "timeseries", "title": "Redis Connected Clients",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 57 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "redis_connected_clients", "legendFormat": "clients" }]
+    },
+
+    {
+      "id": 53, "type": "timeseries", "title": "Redis Memory Used (MB)",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 57 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "decmbytes", "custom": { "lineWidth": 2 } } },
+      "targets": [{ "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "redis_memory_used_bytes / 1024 / 1024", "legendFormat": "used MB" }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 64 }, "id": 160, "title": "JVM & System", "type": "row" },
+
+    {
+      "id": 61, "type": "timeseries", "title": "JVM Heap Memory (MB)",
+      "gridPos": { "h": 7, "w": 8, "x": 0, "y": 65 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "decmbytes", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "jvm_memory_used_bytes{application=\"xxxx.com\", area=\"heap\"} / 1024 / 1024",  "legendFormat": "used" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "jvm_memory_max_bytes{application=\"xxxx.com\", area=\"heap\"} / 1024 / 1024",   "legendFormat": "max" }
+      ]
+    },
+
+    {
+      "id": 62, "type": "timeseries", "title": "JVM Threads",
+      "gridPos": { "h": 7, "w": 8, "x": 8, "y": 65 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "short", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "jvm_threads_live_threads{application=\"xxxx.com\"}",   "legendFormat": "live" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "jvm_threads_daemon_threads{application=\"xxxx.com\"}", "legendFormat": "daemon" }
+      ]
+    },
+
+    {
+      "id": 63, "type": "timeseries", "title": "CPU Usage (%)",
+      "gridPos": { "h": 7, "w": 8, "x": 16, "y": 65 },
+      "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" },
+      "fieldConfig": { "defaults": { "unit": "percentunit", "custom": { "lineWidth": 2 }, "max": 1 } },
+      "targets": [
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "process_cpu_usage{application=\"xxxx.com\"}", "legendFormat": "JVM process" },
+        { "datasource": { "type": "prometheus", "uid": "ffl76qyrsqzuoe" }, "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[15s]))", "legendFormat": "system" }
+      ]
+    }
+
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["flash-sale", "cas", "mq", "kafka", "benchmark"],
+  "time": { "from": "now-5m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Order Benchmark — CAS vs MQ",
+  "uid": "order-benchmark-v1",
+  "version": 1
+}
