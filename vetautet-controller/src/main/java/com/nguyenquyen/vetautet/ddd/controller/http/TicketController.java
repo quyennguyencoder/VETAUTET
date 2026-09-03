@@ -11,6 +11,7 @@ import com.nguyenquyen.vetautet.ddd.controller.mapper.TicketControllerMapper;
 import com.nguyenquyen.vetautet.ddd.controller.model.enums.ResultUtil;
 import com.nguyenquyen.vetautet.ddd.controller.model.vo.ResultMessage;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -20,19 +21,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/ticket")
 @Slf4j
+@RequiredArgsConstructor
 public class TicketController {
 
 
-    @Autowired
-    private TicketAppService ticketAppService;
+    private final TicketAppService ticketAppService;
 
-    /**
-     * Lấy tất cả ticket đang active
-     *
-     * GET /ticket/active
-     *
-     * @return ResultMessage<List<TicketDTO>>
-     */
+
     @GetMapping("/active")
     public ResultMessage<List<TicketDTO>> getAllActiveTickets() {
         log.info("Fetching all active tickets");
@@ -95,17 +90,9 @@ public class TicketController {
         }
     }
 
-    /**
-     * Lấy thông tin ticket
-     *
-     * GET /ticket/1
-     *
-     * @param ticketId
-     * @return ResultMessage<TicketDTO>
-     */
     @GetMapping("/{ticketId}")
     public ResultMessage<TicketDTO> getTicket(
-            @PathVariable Long ticketId) {
+            @PathVariable("ticketId") Long ticketId) {
         log.info("Fetching ticket: {}", ticketId);
         try {
             TicketDTO ticketDTO = ticketAppService.getTicketById(ticketId);
@@ -116,18 +103,9 @@ public class TicketController {
         }
     }
 
-    /**
-     * Cập nhật ticket
-     *
-     * PUT /ticket/1
-     *
-     * @param ticketId
-     * @param updateRequest
-     * @return ResultMessage<TicketDTO>
-     */
     @PutMapping("/{ticketId}")
     public ResultMessage<TicketDTO> updateTicket(
-            @PathVariable Long ticketId,
+            @PathVariable("ticketId") Long ticketId,
             @Valid @RequestBody UpdateTicketRequest updateRequest) {
         log.info("Updating ticket: {}", ticketId);
         try {
@@ -142,17 +120,9 @@ public class TicketController {
         }
     }
 
-    /**
-     * Kích hoạt ticket
-     *
-     * PUT /ticket/1/active
-     *
-     * @param ticketId
-     * @return ResultMessage<TicketDTO>
-     */
     @PutMapping("/{ticketId}/active")
     public ResultMessage<TicketDTO> activeTicket(
-            @PathVariable Long ticketId) {
+            @PathVariable("ticketId") Long ticketId) {
         log.info("Activating ticket: {}", ticketId);
         try {
             TicketDTO ticketDTO = ticketAppService.activeTicket(ticketId);
@@ -163,17 +133,9 @@ public class TicketController {
         }
     }
 
-    /**
-     * Vô hiệu hóa ticket
-     *
-     * PUT /ticket/1/inactive
-     *
-     * @param ticketId
-     * @return ResultMessage<TicketDTO>
-     */
     @PutMapping("/{ticketId}/inactive")
     public ResultMessage<TicketDTO> inactiveTicket(
-            @PathVariable Long ticketId) {
+            @PathVariable("ticketId") Long ticketId) {
         log.info("Inactivating ticket: {}", ticketId);
         try {
             TicketDTO ticketDTO = ticketAppService.inactiveTicket(ticketId);
@@ -184,17 +146,9 @@ public class TicketController {
         }
     }
 
-    /**
-     * Xoá ticket (Soft Delete)
-     *
-     * DELETE /ticket/1
-     *
-     * @param ticketId
-     * @return ResultMessage<String>
-     */
     @DeleteMapping("/{ticketId}")
     public ResultMessage<String> deleteTicket(
-            @PathVariable Long ticketId) {
+            @PathVariable("ticketId") Long ticketId) {
         log.info("Deleting ticket: {}", ticketId);
         try {
             ticketAppService.deleteTicket(ticketId);
