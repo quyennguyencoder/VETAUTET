@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS `vetautet`.`order_202604` (
     KEY index_usr_id (user_id)
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'order table';
 -- insert data: Tạo đơn hàng
-INSERT INTO `vetautet`.`ticket_order_202604` (order_number, user_id, total_amount, terminal_id, order_date, order_notes)
+INSERT INTO `vetautet`.`order_202604` (order_number, user_id, total_amount, terminal_id, order_date, order_notes)
 VALUES ('ORD2025020001', 1001, 5.600, 'POS001', '2025-02-28 10:00:00', 'Family trip');
 
 
