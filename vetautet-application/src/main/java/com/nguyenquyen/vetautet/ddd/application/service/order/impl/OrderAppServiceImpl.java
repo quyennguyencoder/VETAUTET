@@ -5,7 +5,7 @@ import com.nguyenquyen.vetautet.ddd.application.model.OrderDTO;
 import com.nguyenquyen.vetautet.ddd.application.model.PagedOrdersDTO;
 import com.nguyenquyen.vetautet.ddd.application.model.response.PlaceOrderResponse;
 import com.nguyenquyen.vetautet.ddd.application.service.order.OrderAppService;
-import com.nguyenquyen.vetautet.ddd.domain.model.entity.TickerOrder;
+import com.nguyenquyen.vetautet.ddd.domain.model.entity.Order;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -53,7 +53,7 @@ public class OrderAppServiceImpl implements OrderAppService {
     }
 
     @Override
-    public boolean insertOrder(String yearMonth, TickerOrder tickerOrder) {
+    public boolean insertOrder(String yearMonth, Order tickerOrder) {
         return false;
     }
 

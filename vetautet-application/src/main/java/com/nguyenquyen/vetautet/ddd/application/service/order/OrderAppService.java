@@ -5,7 +5,7 @@ package com.nguyenquyen.vetautet.ddd.application.service.order;
 import com.nguyenquyen.vetautet.ddd.application.model.PagedOrdersDTO;
 import com.nguyenquyen.vetautet.ddd.application.model.OrderDTO;
 import com.nguyenquyen.vetautet.ddd.application.model.response.PlaceOrderResponse;
-import com.nguyenquyen.vetautet.ddd.domain.model.entity.TickerOrder;
+import com.nguyenquyen.vetautet.ddd.domain.model.entity.Order;
 
 import java.util.List;
 
@@ -22,7 +22,7 @@ public interface OrderAppService {
 
     // order..
     List<OrderDTO> findAll(String yearMonth);
-    boolean insertOrder(String yearMonth, TickerOrder tickerOrder);
+    boolean insertOrder(String yearMonth, Order tickerOrder);
     OrderDTO findByOrderNumber(String yearMonth, String orderNumber);
 
     /**

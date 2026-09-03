@@ -1,11 +1,11 @@
 package com.nguyenquyen.vetautet.ddd.domain.service.impl;
 
 
-import com.nguyenquyen.vetautet.ddd.domain.service.TickerOrderDomainService;
+import com.nguyenquyen.vetautet.ddd.domain.service.TicketStockDomainService;
 import org.springframework.stereotype.Service;
 
 @Service
-public class TickerOrderDomainServiceImpl implements TickerOrderDomainService {
+public class TicketStockDomainServiceImpl implements TicketStockDomainService {
 
     @Override
     public boolean decreaseStockLevel1(Long tickerId, int quantity) {

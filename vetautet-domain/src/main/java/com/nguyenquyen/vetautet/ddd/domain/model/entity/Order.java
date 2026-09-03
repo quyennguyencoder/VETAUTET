@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-public class TickerOrder {
+public class Order {
     private Integer id;
     private String orderNumber;
     private Integer userId;

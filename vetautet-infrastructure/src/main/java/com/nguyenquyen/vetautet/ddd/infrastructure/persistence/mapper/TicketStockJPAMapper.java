@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
-public interface TicketOrderJPAMapper extends JpaRepository<TicketDetail, Long> {
+public interface TicketStockJPAMapper extends JpaRepository<TicketDetail, Long> {
 
     /**
      * Retrieves the available stock for a given ticket.

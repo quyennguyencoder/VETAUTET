@@ -59,7 +59,7 @@ VALUES
     ('Vé Sự Kiện 01/01 - Hạng VIP', 'Vé VIP cho sự kiện ngày 01/01', 1000, 1000, 0, 200000, 15000, '2025-01-01 00:00:00', '2025-01-01 23:59:59', 1, 2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- 3. order table
-CREATE TABLE IF NOT EXISTS `vetautet`.`ticket_order_202604` (
+CREATE TABLE IF NOT EXISTS `vetautet`.`order_202604` (
     id INT(8) NOT NULL AUTO_INCREMENT COMMENT 'Unique ticket sales ID',
     user_id INT(8) NOT NULL  COMMENT 'userId',
     order_number VARCHAR(50) NOT NULL COMMENT 'Unique order number',
@@ -80,7 +80,7 @@ VALUES ('ORD2025020001', 1001, 5.600, 'POS001', '2025-02-28 10:00:00', 'Family t
 
 
 -- 4. order detail table
-CREATE TABLE IF NOT EXISTS `vetautet`.`ticket_order_details_202502` (
+CREATE TABLE IF NOT EXISTS `vetautet`.`order_details_202502` (
  id INT(8) NOT NULL AUTO_INCREMENT COMMENT 'Unique ticket sales ID',
  ticket_item_id BIGINT(20) NOT NULL COMMENT 'ticket detail ID',
  order_number VARCHAR(50) NOT NULL COMMENT 'Reference to the order number',
@@ -102,7 +102,7 @@ CREATE TABLE IF NOT EXISTS `vetautet`.`ticket_order_details_202502` (
 
 
 -- Thêm 4 vé vào đơn hàng
-INSERT INTO `vetautet`.`ticket_order_details_202502` (ticket_item_id, order_number, passenger_name, passenger_id, departure_station, arrival_station, departure_time, seat_class, seat_number, ticket_price)
+INSERT INTO `vetautet`.`order_details_202502` (ticket_item_id, order_number, passenger_name, passenger_id, departure_station, arrival_station, departure_time, seat_class, seat_number, ticket_price)
 VALUES
     (4,'ORD2025020001', 'Nguyen Van A', 'ID12345678', 'SGN', 'HAN', '2025-03-01 08:00:00', 'Economy', 'A1', 1.400),
     (4,'ORD2025020001', 'Nguyen Van B', 'ID12345679', 'SGN', 'HAN', '2025-03-01 08:00:00', 'Economy', 'A2', 1.400),

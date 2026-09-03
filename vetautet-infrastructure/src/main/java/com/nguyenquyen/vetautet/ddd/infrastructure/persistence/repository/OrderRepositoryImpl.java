@@ -1,8 +1,8 @@
 package com.nguyenquyen.vetautet.ddd.infrastructure.persistence.repository;
 
 
-import com.nguyenquyen.vetautet.ddd.domain.model.entity.TickerOrder;
-import com.nguyenquyen.vetautet.ddd.domain.repository.OrderDeductionRepository;
+import com.nguyenquyen.vetautet.ddd.domain.model.entity.Order;
+import com.nguyenquyen.vetautet.ddd.domain.repository.OrderRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -15,11 +15,11 @@ import java.util.Map;
 
 @Service
 @Slf4j
-public class OrderDeductionInfrasRepositoryImpl implements OrderDeductionRepository {
+public class OrderRepositoryImpl implements OrderRepository {
 
     @Autowired
     private EntityManager entityManager;
-    private static String tablePrefix = "ticket_order_";
+    private static String tablePrefix = "order_";
 
     private String getTableName(String monthOrder) {
         return tablePrefix + monthOrder;
@@ -27,7 +27,7 @@ public class OrderDeductionInfrasRepositoryImpl implements OrderDeductionReposit
 
     @Override
     @Transactional
-    public void insertOrder(String yearMonth, TickerOrder order) {
+    public void insertOrder(String yearMonth, Order order) {
         // AUTO: Create Table...
         ensureTableExists(yearMonth);
         //

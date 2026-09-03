@@ -1,8 +1,8 @@
 package com.nguyenquyen.vetautet.ddd.domain.service.impl;
 
 
-import com.nguyenquyen.vetautet.ddd.domain.model.entity.TickerOrder;
-import com.nguyenquyen.vetautet.ddd.domain.service.OrderDeductionDomainService;
+import com.nguyenquyen.vetautet.ddd.domain.model.entity.Order;
+import com.nguyenquyen.vetautet.ddd.domain.service.OrderDomainService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -10,11 +10,11 @@ import java.util.List;
 
 
 @Service
-public class OrderDeductionDomainServiceImpl implements OrderDeductionDomainService {
+public class OrderDomainServiceImpl implements OrderDomainService {
 
 
     @Override
-    public void insertOrder(String yearMonth, TickerOrder tickerOrder) {
+    public void insertOrder(String yearMonth, Order tickerOrder) {
 
     }
 

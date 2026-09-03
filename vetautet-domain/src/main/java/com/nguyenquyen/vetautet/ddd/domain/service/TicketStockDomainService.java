@@ -1,14 +1,20 @@
-package com.nguyenquyen.vetautet.ddd.domain.repository;
+package com.nguyenquyen.vetautet.ddd.domain.service;
 
-public interface TickerOrderRepository {
+public interface TicketStockDomainService {
+
     boolean decreaseStockLevel1(Long tickerId, int quantity);
     boolean decreaseStockLevel2(Long tickerId, int quantity);
     boolean decreaseStockLevel3CAS(Long tickerId, int oldStockAvailable, int quantity);
 
+    // get stockAvailable
     int getStockAvailable(Long ticketId);
 
     /**
-     * Thực hiện câu lệnh SQL hoàn kho vào Database
+     * Tăng số lượng tồn kho (Hoàn kho)
+     *
+     * @param tickerId ID của vé/sản phẩm
+     * @param quantity Số lượng hoàn lại
+     * @return true nếu thành công
      */
     boolean increaseStock(Long tickerId, int quantity);
 }
