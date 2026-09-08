@@ -19,7 +19,6 @@ public class TicketDetailAppServiceImpl implements TicketDetailAppService {
 
     private final TicketDetailDomainService ticketDetailDomainService;
     private final TicketDetailCacheService ticketDetailCacheService;
-
     private final TicketDetailCacheServiceRefactor ticketDetailCacheServiceRefactor;
 
     @Override

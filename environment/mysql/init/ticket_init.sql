@@ -62,6 +62,12 @@ VALUES
 CREATE TABLE IF NOT EXISTS `vetautet`.`order_202604` (
     id INT(8) NOT NULL AUTO_INCREMENT COMMENT 'Unique ticket sales ID',
     user_id INT(8) NOT NULL  COMMENT 'userId',
+
+    -- THÊM 3 CỘT NÀY VÀO ĐÂY ĐỂ ĐẨY order_number XUỐNG VỊ TRÍ SỐ 6
+    ticket_id INT(8) NOT NULL COMMENT 'ID của vé',
+    quantity INT(4) NOT NULL COMMENT 'Số lượng vé mua',
+    order_status INT(2) NOT NULL DEFAULT 0 COMMENT 'Trạng thái: 0-Pending, 1-Paid, 2-Cancelled',
+
     order_number VARCHAR(50) NOT NULL COMMENT 'Unique order number',
     total_amount DECIMAL(10,3) NOT NULL COMMENT 'Total payment amount',
     terminal_id VARCHAR(20) NOT NULL COMMENT 'ID of the sales terminal',
@@ -75,9 +81,8 @@ CREATE TABLE IF NOT EXISTS `vetautet`.`order_202604` (
     KEY index_usr_id (user_id)
     ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'order table';
 -- insert data: Tạo đơn hàng
-INSERT INTO `vetautet`.`order_202604` (order_number, user_id, total_amount, terminal_id, order_date, order_notes)
-VALUES ('ORD2025020001', 1001, 5.600, 'POS001', '2025-02-28 10:00:00', 'Family trip');
-
+INSERT INTO `vetautet`.`order_202604` (order_number, user_id, ticket_id, quantity, order_status, total_amount, terminal_id, order_date, order_notes)
+VALUES ('ORD2025020001', 1001, 1, 2, 0, 5.600, 'POS001', '2025-02-28 10:00:00', 'Family trip');
 
 -- 4. order detail table
 CREATE TABLE IF NOT EXISTS `vetautet`.`order_details_202502` (
