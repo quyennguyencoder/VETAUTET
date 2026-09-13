@@ -1,7 +1,8 @@
-package com.nguyenquyen.vetautet.ddd.application.service.order;
+package com.nguyenquyen.vetautet.ddd.application.mq;
 
 
-import com.nguyenquyen.vetautet.ddd.application.service.order.cache.StockOrderCacheService;
+import com.nguyenquyen.vetautet.ddd.application.cronjob.OrderCancelScheduleService;
+import com.nguyenquyen.vetautet.ddd.application.service.order.cache.TicketStockCacheService;
 import com.nguyenquyen.vetautet.ddd.domain.model.entity.Order;
 import com.nguyenquyen.vetautet.ddd.domain.repository.IdempotencyKeyRepository;
 import com.nguyenquyen.vetautet.ddd.domain.repository.OrderQueueRepository;
@@ -27,8 +28,9 @@ public class KafkaOrderConsumer {
     private final IdempotencyKeyRepository idempotencyKeyRepository;
     private final TicketStockDomainService ticketStockDomainService;
     private final OrderDomainService orderDomainService;
-    private final StockOrderCacheService stockOrderCacheService;
+    private final TicketStockCacheService ticketStockCacheService;
     private final OrderQueueRepository orderQueueRepository;
+    private final OrderCancelScheduleService orderCancelScheduleService;
 
     @KafkaListener(
             topics = "order-place-topic",
@@ -56,7 +58,7 @@ public class KafkaOrderConsumer {
         boolean stockDecreased = ticketStockDomainService.decreaseStockLevel1(ticketId, quantity);
         if (!stockDecreased) {
             // Producer đã pre-deduct Redis — hoàn lại vì DB không đủ stock
-            stockOrderCacheService.increaseStockCache(ticketId, quantity);
+            ticketStockCacheService.increaseStockCache(ticketId, quantity);
             orderQueueRepository.updateStatus(token, 2, null, "Hết vé");
             log.warn("[MQ] Out of stock token={}", token);
             return;
@@ -80,5 +82,8 @@ public class KafkaOrderConsumer {
         // push order to SQS queue
         log.info("[MQ] Success token={} orderNumber={}", token, orderNumber);
         // return bình thường → @Transactional commit: idempotency_key + stock decrease + order + status=1
+
+        // Đăng ký auto-cancel: nếu không thanh toán trong PAYMENT_TIMEOUT_MINUTES, OrderTimeoutWorker sẽ tự hủy
+        orderCancelScheduleService.scheduleTimeout(orderNumber, nTable, ticketId.intValue(), quantity);
     }
 }

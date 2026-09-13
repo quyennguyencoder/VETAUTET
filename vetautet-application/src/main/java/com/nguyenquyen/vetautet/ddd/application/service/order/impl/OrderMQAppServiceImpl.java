@@ -3,7 +3,7 @@ package com.nguyenquyen.vetautet.ddd.application.service.order.impl;
 
 import com.alibaba.fastjson2.JSON;
 import com.nguyenquyen.vetautet.ddd.application.service.order.OrderMQAppService;
-import com.nguyenquyen.vetautet.ddd.application.service.order.cache.StockOrderCacheService;
+import com.nguyenquyen.vetautet.ddd.application.service.order.cache.TicketStockCacheService;
 import com.nguyenquyen.vetautet.ddd.domain.model.entity.OrderQueue;
 import com.nguyenquyen.vetautet.ddd.domain.model.entity.OutboxEvent;
 import com.nguyenquyen.vetautet.ddd.domain.repository.OrderQueueRepository;
@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 @RequiredArgsConstructor
 public class OrderMQAppServiceImpl implements OrderMQAppService {
 
-    private final StockOrderCacheService stockOrderCacheService;
+    private final TicketStockCacheService ticketStockCacheService;
     private final OrderQueueRepository orderQueueRepository;
     private final OutboxEventRepository outboxEventRepository;
 
@@ -35,23 +35,23 @@ public class OrderMQAppServiceImpl implements OrderMQAppService {
     @Override
     public OrderQueue placeOrderMQ(Long ticketId, int quantity) {
         // 1. Redis LUA gate — fast gate, không thay đổi so với trước
-        int redisResult = stockOrderCacheService.decreaseStockCacheByLUA(ticketId, quantity);
+        int redisResult = ticketStockCacheService.decreaseStockCacheByLUA(ticketId, quantity);
         if (redisResult == -1) {
             log.info("placeOrderMQ: cache miss for ticketId={}, warming up...", ticketId);
-            boolean warmed = stockOrderCacheService.addStockAvailableToCache(ticketId);
+            boolean warmed = ticketStockCacheService.addStockAvailableToCache(ticketId);
             if (!warmed) {
                 return failedQueue("TICKET_NOT_FOUND", "Không tìm thấy sự kiện");
             }
-            redisResult = stockOrderCacheService.decreaseStockCacheByLUA(ticketId, quantity);
+            redisResult = ticketStockCacheService.decreaseStockCacheByLUA(ticketId, quantity);
         }
         if (redisResult == 0) {
             log.info("placeOrderMQ: Redis OOS for ticketId={}", ticketId);
             return failedQueue("OUT_OF_STOCK", "Hết vé");
         }
 
-        long unitPrice = stockOrderCacheService.getEffectivePrice(ticketId);
+        long unitPrice = ticketStockCacheService.getEffectivePrice(ticketId);
         if (unitPrice <= 0) {
-            stockOrderCacheService.increaseStockCache(ticketId, quantity);
+            ticketStockCacheService.increaseStockCache(ticketId, quantity);
             return failedQueue("PRICE_NOT_FOUND", "Không thể xác định giá vé");
         }
 
@@ -95,7 +95,7 @@ public class OrderMQAppServiceImpl implements OrderMQAppService {
 
         } catch (Exception e) {
             // Transaction đã rollback — compensate Redis để không trừ stock oan
-            stockOrderCacheService.increaseStockCache(ticketId, quantity);
+            ticketStockCacheService.increaseStockCache(ticketId, quantity);
             log.error("placeOrderMQ: transaction failed, compensated Redis for ticketId={}", ticketId, e);
             return failedQueue("INTERNAL_ERROR", "Lỗi hệ thống, vui lòng thử lại");
         }

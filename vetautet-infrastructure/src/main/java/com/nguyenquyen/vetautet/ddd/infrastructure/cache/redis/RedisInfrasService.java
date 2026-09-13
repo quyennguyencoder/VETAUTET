@@ -2,6 +2,7 @@ package com.nguyenquyen.vetautet.ddd.infrastructure.cache.redis;
 
 import org.springframework.data.redis.core.RedisTemplate;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public interface RedisInfrasService {
@@ -23,5 +24,10 @@ public interface RedisInfrasService {
     int getInt(String key);
 
     // bit
+
+
+    Boolean zAdd(String key, String value, double score);
+    Set<String> zRangeByScore(String key, double min, double max, long limit);
+    Long zRemove(String key, Object... values);
 
 }

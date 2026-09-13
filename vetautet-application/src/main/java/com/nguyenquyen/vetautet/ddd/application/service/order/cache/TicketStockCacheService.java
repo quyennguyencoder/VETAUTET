@@ -6,7 +6,6 @@ import com.nguyenquyen.vetautet.ddd.application.service.ticket.cache.TicketDetai
 import com.nguyenquyen.vetautet.ddd.infrastructure.cache.redis.RedisInfrasService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
@@ -16,7 +15,7 @@ import java.util.Collections;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class StockOrderCacheService {
+public class TicketStockCacheService {
 
     private static final String LUA_DEDUCT =
             "local stock = redis.call('GET', KEYS[1]); " +

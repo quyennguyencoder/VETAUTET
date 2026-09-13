@@ -1,11 +1,12 @@
 package com.nguyenquyen.vetautet.ddd.application.service.order.impl;
 
 
+import com.nguyenquyen.vetautet.ddd.application.cronjob.OrderCancelScheduleService;
 import com.nguyenquyen.vetautet.ddd.application.model.OrderDTO;
 import com.nguyenquyen.vetautet.ddd.application.model.PagedOrdersDTO;
 import com.nguyenquyen.vetautet.ddd.application.model.response.PlaceOrderResponse;
 import com.nguyenquyen.vetautet.ddd.application.service.order.OrderAppService;
-import com.nguyenquyen.vetautet.ddd.application.service.order.cache.StockOrderCacheService;
+import com.nguyenquyen.vetautet.ddd.application.service.order.cache.TicketStockCacheService;
 import com.nguyenquyen.vetautet.ddd.domain.model.entity.Order;
 import com.nguyenquyen.vetautet.ddd.domain.service.OrderDomainService;
 import com.nguyenquyen.vetautet.ddd.domain.service.TicketStockDomainService;
@@ -38,8 +39,9 @@ public class OrderAppServiceImpl implements OrderAppService {
 
     private final TicketStockDomainService ticketStockDomainService;
     private final OrderDomainService orderDomainService;
-    private final StockOrderCacheService stockOrderCacheService;
+    private final TicketStockCacheService ticketStockCacheService;
     private final RedisDistributedService redisDistributedService;
+    private final OrderCancelScheduleService orderCancelScheduleService;
 
 
 
@@ -48,15 +50,15 @@ public class OrderAppServiceImpl implements OrderAppService {
     public PlaceOrderResponse placeOrderCAS(Long ticketId, int quantity) {
         boolean isRedisDecremented = false;
         try {
-            int redisResult = stockOrderCacheService.decreaseStockCacheByLUA(ticketId, quantity);
+            int redisResult = ticketStockCacheService.decreaseStockCacheByLUA(ticketId, quantity);
             if (redisResult == -1) {
                 // Cache chưa được warm → load từ DB rồi retry
                 log.info("placeOrderCAS: cache miss for ticketId={}, warming up...", ticketId);
-                boolean warmed = stockOrderCacheService.addStockAvailableToCache(ticketId);
+                boolean warmed = ticketStockCacheService.addStockAvailableToCache(ticketId);
                 if (!warmed) {
                     return PlaceOrderResponse.failed("TICKET_NOT_FOUND", "Không tìm thấy sự kiện");
                 }
-                redisResult = stockOrderCacheService.decreaseStockCacheByLUA(ticketId, quantity);
+                redisResult = ticketStockCacheService.decreaseStockCacheByLUA(ticketId, quantity);
             }
             if (redisResult == 0) {
                 log.info("placeOrderCAS: Redis stock insufficient for ticketId={}", ticketId);
@@ -67,14 +69,14 @@ public class OrderAppServiceImpl implements OrderAppService {
             // Redis Lua đã là atomic gate → DB chỉ cần safety net, không cần CAS
             boolean isDecreaseStockSuccess = ticketStockDomainService.decreaseStockLevel1(ticketId, quantity);
             if (!isDecreaseStockSuccess) {
-                stockOrderCacheService.increaseStockCache(ticketId, quantity);
+                ticketStockCacheService.increaseStockCache(ticketId, quantity);
                 log.warn("placeOrderCAS: DB update failed, rolled back Redis for ticketId={}", ticketId);
                 return PlaceOrderResponse.failed("STOCK_CONFLICT", "Đặt vé không thành công, vui lòng thử lại");
             }
 
-            long unitPrice = stockOrderCacheService.getEffectivePrice(ticketId);
+            long unitPrice = ticketStockCacheService.getEffectivePrice(ticketId);
             if (unitPrice <= 0) {
-                stockOrderCacheService.increaseStockCache(ticketId, quantity);
+                ticketStockCacheService.increaseStockCache(ticketId, quantity);
 //                tickerOrderDomainService.increaseStock(ticketId, quantity); // not TX Trong trường hợp này, nếu không lấy được giá thì có thể do dữ liệu không hợp lệ hoặc lỗi hệ thống. Việc rollback stock
                 log.warn("placeOrderCAS: price not found for ticketId={}, rolled back Redis", ticketId);
                 return PlaceOrderResponse.failed("PRICE_NOT_FOUND", "Không thể xác định giá vé");
@@ -95,12 +97,15 @@ public class OrderAppServiceImpl implements OrderAppService {
             order.setOrderNotes("Order -> Pending");
             orderDomainService.insertOrder(nTable, order);
 
+            // Đăng ký auto-cancel: nếu không thanh toán trong PAYMENT_TIMEOUT_MINUTES, OrderTimeoutWorker sẽ tự hủy
+            orderCancelScheduleService.scheduleTimeout(orderNumber, nTable, ticketId.intValue(), quantity);
+
             log.info("placeOrderCAS: success | ticketId={} orderNumber={}", ticketId, orderNumber);
             return PlaceOrderResponse.success(orderNumber);
 
         } catch (Exception e) {
             log.error("placeOrderCAS: error for ticketId={}", ticketId, e);
-            if (isRedisDecremented) stockOrderCacheService.increaseStockCache(ticketId, quantity);
+            if (isRedisDecremented) ticketStockCacheService.increaseStockCache(ticketId, quantity);
 //            if (isDbDecremented)    tickerOrderDomainService.increaseStock(ticketId, quantity); // not TX
             return PlaceOrderResponse.failed("SERVER_ERROR", "Lỗi hệ thống, vui lòng thử lại");
         }
@@ -261,7 +266,7 @@ public class OrderAppServiceImpl implements OrderAppService {
             }
 
             // Hoàn kho Redis
-            boolean isStockRecoveredRedis = stockOrderCacheService.increaseStockCache(ticketId, quantity);
+            boolean isStockRecoveredRedis = ticketStockCacheService.increaseStockCache(ticketId, quantity);
             if (!isStockRecoveredRedis) {
                 log.warn("Redis stock recovery failed (Inconsistency), order: {}", orderNumber);
                 // Có thể ghi log lỗi ra một bảng riêng để quét bù (Retry)
@@ -278,6 +283,61 @@ public class OrderAppServiceImpl implements OrderAppService {
             throw new RuntimeException(e);
         } finally {
             //
+            lock.unlock();
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public boolean systemCancelOrder(String orderNumber, String yearMonth) {
+        log.info("[SYSTEM-CANCEL] Bắt đầu xử lý hủy tự động cho đơn: {}", orderNumber);
+        // 1. Dùng RedisDistributedLocker khóa đơn hàng lại (Chống đua lệnh với User tự bấm hủy)
+        String lockKey = "LOCK:CANCEL_ORDER:" + orderNumber;
+        RedisDistributedLocker lock = redisDistributedService.getDistributedLock(lockKey);
+        try {
+            // Cố gắng giữ khóa trong 5 giây
+            boolean isLocked = lock.tryLock(1, 5, java.util.concurrent.TimeUnit.SECONDS);
+            if (!isLocked) {
+                log.warn("[SYSTEM-CANCEL] Hệ thống đang bận xử lý đơn này rồi: {}", orderNumber);
+                return false;
+            }
+            // 2. Tìm đơn hàng trong DB
+            OrderDTO order = findByOrderNumber(orderNumber);
+            if (order == null) {
+                log.error("[SYSTEM-CANCEL] Không tìm thấy đơn hàng: {}", orderNumber);
+                return false;
+            }
+            // BƯỚC QUAN TRỌNG: Nếu đơn đã hủy (2) hoặc đã thanh toán (1) thì THOÁT NGAY
+            if (order.getOrderStatus() != 0) {
+                log.info("[SYSTEM-CANCEL] Đơn hàng {} có trạng thái = {} (Không phải Pending). Bỏ qua!", orderNumber, order.getOrderStatus());
+                return true;
+            }
+            // 3. Cập nhật trạng thái = 2 (Đã hủy)
+            boolean isUpdated = orderDomainService.updateOrderStatus(yearMonth, orderNumber, 2);
+            if (!isUpdated) {
+                log.error("[SYSTEM-CANCEL] Lỗi Update trạng thái Database cho đơn: {}", orderNumber);
+                return false;
+            }
+            // Lấy thông tin vé để hoàn kho
+            Long ticketId = Long.valueOf(order.getTicketId());
+            int quantity = order.getQuantity();
+            // 4. Cộng trả vé vào MySQL
+            boolean isStockRecoveredDB = ticketStockDomainService.increaseStock(ticketId, quantity);
+            if (!isStockRecoveredDB) {
+                throw new RuntimeException("Lỗi hoàn kho DB cho đơn: " + orderNumber);
+            }
+            // 5. Cộng trả vé lên Redis (RAM)
+            boolean isStockRecoveredRedis = ticketStockCacheService.increaseStockCache(ticketId, quantity);
+            if (!isStockRecoveredRedis) {
+                log.warn("[SYSTEM-CANCEL] Hoàn vé Redis thất bại, có thể Redis đang sập. Đơn: {}", orderNumber);
+            }
+            log.info("[SYSTEM-CANCEL] Xử lý HỦY TỰ ĐỘNG THÀNH CÔNG đơn: {}", orderNumber);
+            return true;
+        } catch (Exception e) {
+            log.error("[SYSTEM-CANCEL] Ngoại lệ khi hủy đơn: {}", orderNumber, e);
+            throw new RuntimeException(e); // Ép Spring Rollback Transaction
+        } finally {
+            // Mở khóa
             lock.unlock();
         }
     }
