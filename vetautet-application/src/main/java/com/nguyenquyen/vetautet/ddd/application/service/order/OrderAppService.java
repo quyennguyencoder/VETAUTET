@@ -14,5 +14,6 @@ public interface OrderAppService {
     OrderDTO findByOrderNumber(String orderNumber);
     PagedOrdersDTO findPage(String yearMonth, long lastId, int limit);
     boolean cancelOrder(Long userId, String orderNumber);
+    boolean systemCancelOrder(String orderNumber, String yearMonth);
 
 }

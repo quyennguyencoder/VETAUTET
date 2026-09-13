@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 @Slf4j
@@ -115,5 +116,49 @@ public class RedisInfrasServiceImpl  implements RedisInfrasService {
     @Override
     public int getInt(String key) {
         return (int) redisTemplate.opsForValue().get(key);
+    }
+
+
+    // ==========================================
+    // CÁC HÀM XỬ LÝ ZSET (Dành cho Auto-Cancel)
+    // ==========================================
+
+    @Override
+    public Boolean zAdd(String key, String value, double score) {
+        try {
+            // Ném giá trị vào Sorted Set với Điểm số (Score)
+            return redisTemplate.opsForZSet().add(key, value, score);
+        } catch (Exception e) {
+            log.error("Lỗi khi zAdd vào Redis, key={}", key, e);
+            return false;
+        }
+    }
+
+    @Override
+    public Set<String> zRangeByScore(String key, double min, double max, long limit) {
+        try {
+            // Lấy ra dưới dạng Object
+            Set<Object> rawSet = redisTemplate.opsForZSet().rangeByScore(key, min, max, 0, limit);
+            if (rawSet == null) return new java.util.HashSet<>();
+
+            // Ép toàn bộ thành String một cách an toàn
+            return rawSet.stream()
+                    .map(Object::toString)
+                    .collect(java.util.stream.Collectors.toSet());
+        } catch (Exception e) {
+            log.error("Lỗi khi zRangeByScore trong Redis, key={}", key, e);
+            return new java.util.HashSet<>();
+        }
+    }
+
+    @Override
+    public Long zRemove(String key, Object... values) {
+        try {
+            // Xóa phần tử khỏi ZSET sau khi đã xử lý xong
+            return redisTemplate.opsForZSet().remove(key, values);
+        } catch (Exception e) {
+            log.error("Lỗi khi zRemove khỏi Redis, key={}", key, e);
+            return 0L;
+        }
     }
 }

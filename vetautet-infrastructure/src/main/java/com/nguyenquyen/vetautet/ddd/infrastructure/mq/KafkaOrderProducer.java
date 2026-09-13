@@ -15,24 +15,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class KafkaOrderProducer {
 
-    private final KafkaTemplate<String, PlaceOrderMQMessage> kafkaTemplate;
-
-    public void sendOrderMessage(PlaceOrderMQMessage message) {
-        CompletableFuture<SendResult<String, PlaceOrderMQMessage>> future =
-                kafkaTemplate.send(KafkaTopicConfig.ORDER_PLACE_TOPIC, message.getToken(), message);
-
-        future.whenComplete((result, ex) -> {
-            if (ex != null) {
-                log.error("KafkaOrderProducer: failed to send token={}", message.getToken(), ex);
-            } else {
-                log.debug("KafkaOrderProducer: sent token={} partition={} offset={}",
-                        message.getToken(),
-                        result.getRecordMetadata().partition(),
-                        result.getRecordMetadata().offset());
-            }
-        });
-
-    }
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     /**
      * Outbox Publisher — row-by-row mode.
@@ -48,7 +31,13 @@ public class KafkaOrderProducer {
      * Outbox Publisher — batch mode.
      * Gửi async, trả về future để caller thu thập và bulk update sau.
      */
-    public CompletableFuture<SendResult<String, PlaceOrderMQMessage>> sendAsync(PlaceOrderMQMessage message) {
+    public CompletableFuture<SendResult<String, Object>> sendAsync(PlaceOrderMQMessage message) {
         return kafkaTemplate.send(KafkaTopicConfig.ORDER_PLACE_TOPIC, message.getToken(), message);
+    }
+
+    public void sendCancelMessage(CancelOrderMQMessage message) throws Exception {
+        kafkaTemplate.send("order-cancel-topic", message.getOrderNumber(), message)
+                .get(5, TimeUnit.SECONDS);
+        log.info("Đã gửi và nhận ACK hủy từ Kafka cho đơn: {}", message.getOrderNumber());
     }
 }
