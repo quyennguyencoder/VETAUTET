@@ -46,7 +46,7 @@ public class OrderAppServiceImpl implements OrderAppService {
 
 
     @Override
-//    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class)
     public PlaceOrderResponse placeOrderCAS(Long ticketId, int quantity) {
         boolean isRedisDecremented = false;
         try {
@@ -67,7 +67,7 @@ public class OrderAppServiceImpl implements OrderAppService {
             isRedisDecremented = true;
 
             // Redis Lua đã là atomic gate → DB chỉ cần safety net, không cần CAS
-            boolean isDecreaseStockSuccess = ticketStockDomainService.decreaseStockLevel1(ticketId, quantity);
+            boolean isDecreaseStockSuccess = ticketStockDomainService.decreaseStockByAtomicUpdate(ticketId, quantity);
             if (!isDecreaseStockSuccess) {
                 ticketStockCacheService.increaseStockCache(ticketId, quantity);
                 log.warn("placeOrderCAS: DB update failed, rolled back Redis for ticketId={}", ticketId);

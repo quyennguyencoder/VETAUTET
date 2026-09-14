@@ -55,7 +55,7 @@ public class KafkaOrderConsumer {
 
         log.info("[MQ] Processing token={} ticketId={} qty={}", token, ticketId, quantity);
 
-        boolean stockDecreased = ticketStockDomainService.decreaseStockLevel1(ticketId, quantity);
+        boolean stockDecreased = ticketStockDomainService.decreaseStockByAtomicUpdate(ticketId, quantity);
         if (!stockDecreased) {
             // Producer đã pre-deduct Redis — hoàn lại vì DB không đủ stock
             ticketStockCacheService.increaseStockCache(ticketId, quantity);

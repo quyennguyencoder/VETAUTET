@@ -27,7 +27,7 @@ const TICKET_ID   = parseInt(__ENV.TICKET_ID   || '3');
 const QUANTITY    = parseInt(__ENV.QUANTITY    || '1');
 const ENDPOINT    = __ENV.ENDPOINT    || '/order/cas';   // thay /order/mq để so sánh
 const STOCK       = parseInt(__ENV.STOCK       || '2000');
-const TOTAL_USERS = parseInt(__ENV.TOTAL_USERS || '10000'); // requests gửi đến server, không phải VUs
+const TOTAL_USERS = parseInt(__ENV.TOTAL_USERS || '30000'); // requests gửi đến server, không phải VUs
 // VUS: CAS bị giới hạn bởi pool (50) → dùng 80~100
 //      MQ trả về ngay          → dùng 300~500
 const VUS         = parseInt(__ENV.VUS         || '500');
