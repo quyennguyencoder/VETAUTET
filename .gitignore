@@ -40,3 +40,5 @@ build/
 .DS_Store
 
 environment/data/
+vetautet.fe.com/node_modules/
+vetautet.fe.com/dist/

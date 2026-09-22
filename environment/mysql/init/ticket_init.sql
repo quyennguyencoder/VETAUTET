@@ -2,6 +2,21 @@ CREATE DATABASE IF NOT EXISTS vetautet
     DEFAULT CHARSET = utf8mb4
     COLLATE = utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `vetautet`.`users` (
+                                                  `id` BIGINT(20) NOT NULL AUTO_INCREMENT COMMENT 'Primary key',
+    `email` VARCHAR(100) NOT NULL COMMENT 'Email user, unique',
+    `password` VARCHAR(255) NULL COMMENT 'Password hash, null if created by social login',
+    `social_id` VARCHAR(100) NULL COMMENT 'Social ID (e.g. Google ID)',
+    `role` VARCHAR(50) NOT NULL DEFAULT 'ROLE_USER' COMMENT 'User role',
+    `avatar_url` TEXT NULL COMMENT 'User avatar URL',
+    `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'Last update time',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Creation time',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_email` (`email`),
+    KEY `idx_social_id` (`social_id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = 'User table';
+
+
 -- 1. ticket table
 CREATE TABLE IF NOT EXISTS `vetautet`.`ticket` (
      `id` BIGINT(20)  NOT NULL AUTO_INCREMENT COMMENT 'Primary key',

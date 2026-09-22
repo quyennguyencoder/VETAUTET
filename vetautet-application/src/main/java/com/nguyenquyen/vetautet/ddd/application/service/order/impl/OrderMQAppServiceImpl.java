@@ -57,7 +57,12 @@ public class OrderMQAppServiceImpl implements OrderMQAppService {
 
         // 2. Ghi order_queue + outbox_event trong cùng 1 transaction
         // Nếu bất kỳ write nào fail → cả 2 rollback → không còn trạng thái nửa vời
-        int userId = ThreadLocalRandom.current().nextInt(1, 10);
+        Long currentUserId = com.nguyenquyen.vetautet.ddd.infrastructure.security.SecurityUtils.getCurrentUserId();
+        if (currentUserId == null) {
+            // int userId = ThreadLocalRandom.current().nextInt(1, 10);
+            throw new RuntimeException("Unauthorized user");
+        }
+        int userId = currentUserId.intValue();
         String token = "MQ-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
 
         try {

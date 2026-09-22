@@ -82,7 +82,12 @@ public class OrderAppServiceImpl implements OrderAppService {
                 return PlaceOrderResponse.failed("PRICE_NOT_FOUND", "Không thể xác định giá vé");
             }
 
-            int userId = ThreadLocalRandom.current().nextInt(1, 10);
+            Long userId = com.nguyenquyen.vetautet.ddd.infrastructure.security.SecurityUtils.getCurrentUserId();
+            if (userId == null) {
+                 // Fallback or just let it fail
+                 // userId = (long) ThreadLocalRandom.current().nextInt(1, 10);
+                 throw new RuntimeException("Unauthorized user");
+            }
             String orderNumber = "OKX-SGN-" + userId + "-" + ORDER_SEQ.incrementAndGet() + "-" + System.currentTimeMillis();
             String nTable = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
 
@@ -90,7 +95,7 @@ public class OrderAppServiceImpl implements OrderAppService {
             order.setTicketId(ticketId.intValue());
             order.setQuantity(quantity);
             order.setOrderStatus(0);
-            order.setUserId(userId);
+            order.setUserId(userId.intValue());
             order.setOrderNumber(orderNumber);
             order.setTotalAmount(new BigDecimal(unitPrice * quantity));
             order.setTerminalId("OKX-SGN");
@@ -338,6 +343,49 @@ public class OrderAppServiceImpl implements OrderAppService {
             throw new RuntimeException(e); // Ép Spring Rollback Transaction
         } finally {
             // Mở khóa
+            lock.unlock();
+        }
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public boolean processVnPayIpn(String orderNumber, String yearMonth) {
+        log.info("[VNPay-IPN] Bắt đầu xử lý thanh toán cho đơn: {}", orderNumber);
+        
+        String lockKey = "LOCK:PAYMENT_ORDER:" + orderNumber;
+        RedisDistributedLocker lock = redisDistributedService.getDistributedLock(lockKey);
+        try {
+            boolean isLocked = lock.tryLock(1, 5, java.util.concurrent.TimeUnit.SECONDS);
+            if (!isLocked) {
+                log.warn("[VNPay-IPN] Hệ thống đang xử lý đơn này: {}", orderNumber);
+                return false;
+            }
+            
+            OrderDTO order = findByOrderNumber(orderNumber);
+            if (order == null) {
+                log.error("[VNPay-IPN] Không tìm thấy đơn hàng: {}", orderNumber);
+                return false;
+            }
+            
+            // Chỉ cập nhật nếu đơn đang Pending
+            if (order.getOrderStatus() != 0) {
+                log.info("[VNPay-IPN] Đơn hàng {} đã được xử lý (trạng thái {}). Bỏ qua!", orderNumber, order.getOrderStatus());
+                return true;
+            }
+            
+            // Cập nhật trạng thái = 1 (Thành công)
+            boolean isUpdated = orderDomainService.updateOrderStatus(yearMonth, orderNumber, 1);
+            if (!isUpdated) {
+                log.error("[VNPay-IPN] Cập nhật trạng thái thanh toán thất bại cho đơn: {}", orderNumber);
+                return false;
+            }
+            
+            log.info("[VNPay-IPN] Thanh toán THÀNH CÔNG cho đơn: {}", orderNumber);
+            return true;
+        } catch (Exception e) {
+            log.error("[VNPay-IPN] Lỗi xử lý thanh toán: {}", orderNumber, e);
+            throw new RuntimeException(e);
+        } finally {
             lock.unlock();
         }
     }

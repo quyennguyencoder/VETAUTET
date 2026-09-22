@@ -10,11 +10,13 @@ import com.nguyenquyen.vetautet.ddd.domain.model.entity.OrderQueue;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/order/mq")
 @Slf4j
+@PreAuthorize("hasRole('ROLE_USER')")
 public class OrderMQController {
 
     @Autowired

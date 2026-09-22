@@ -10,6 +10,8 @@ import com.nguyenquyen.vetautet.ddd.controller.model.vo.ResultMessage;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.nguyenquyen.vetautet.ddd.infrastructure.security.SecurityUtils;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,13 +20,15 @@ import java.util.List;
 @RequestMapping("/order")
 @Slf4j
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ROLE_USER')")
 public class OrderController {
 
     private final OrderAppService orderAppService;
 
     @PostMapping("/cas")
     public ResultMessage<PlaceOrderResponse> placeOrderCAS(@Valid @RequestBody CreateBookingRequest request) {
-        log.info("Controller:->placeOrderCAS | ticketId={}, quantity={}", request.getTicketId(), request.getQuantity());
+        Long userId = SecurityUtils.getCurrentUserId();
+        log.info("Controller:->placeOrderCAS | userId={}, ticketId={}, quantity={}", userId, request.getTicketId(), request.getQuantity());
         try {
             PlaceOrderResponse response = orderAppService.placeOrderCAS(request.getTicketId(), request.getQuantity());
             return ResultUtil.data(response);
@@ -35,42 +39,45 @@ public class OrderController {
     }
 
     // V1 — load toàn bộ đơn hàng (không phân trang, dùng để so sánh)
-    @GetMapping("/{userId}/list")
+    @GetMapping("/list")
     public ResultMessage<List<OrderDTO>> getListOrderByUser(
-            @PathVariable("userId") Long userId,
             @RequestParam("ntable") String ntable
     ) {
+        Long userId = SecurityUtils.getCurrentUserId();
         log.info("Controller:->getListOrderByUser [V1] | userId={} ntable={}", userId, ntable);
+        // TODO: Pass userId to service to only fetch their orders
         return ResultUtil.data(orderAppService.findAll(ntable));
     }
 
     // V2 — cursor-based pagination (50 đơn/trang, O(1) dù có 10M rows)
-    @GetMapping("/{userId}/list/page")
+    @GetMapping("/list/page")
     public ResultMessage<PagedOrdersDTO> getListOrderByUserPaged(
-            @PathVariable("userId") Long userId,
             @RequestParam("ntable") String ntable,
             @RequestParam(value = "cursor", defaultValue = "0") long cursor,
             @RequestParam(value = "limit",  defaultValue = "50") int limit
     ) {
+        Long userId = SecurityUtils.getCurrentUserId();
         log.info("Controller:->getListOrderByUserPaged [V2] | userId={} ntable={} cursor={} limit={}", userId, ntable, cursor, limit);
         int safeLimit = Math.min(limit, 100);
+        // TODO: Pass userId to service to only fetch their orders
         return ResultUtil.data(orderAppService.findPage(ntable, cursor, safeLimit));
     }
 
     // get orderItem
-    @GetMapping("/{userId}/{orderNumber}")
+    @GetMapping("/{orderNumber}")
     public ResultMessage<OrderDTO> getOrderByUser(
-            @PathVariable("userId") Long userId,
             @PathVariable("orderNumber") String orderNumber
     ) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        // Cần đảm bảo order này thuộc về userId hiện tại ở tầng AppService, tạm thời chỉ pass qua
         return ResultUtil.data(orderAppService.findByOrderNumber(orderNumber));
     }
 
-    @PutMapping("/{userId}/{orderNumber}/cancel")
+    @PutMapping("/{orderNumber}/cancel")
     public ResultMessage<Boolean> cancelOrder(
-            @PathVariable("userId") Long userId,
             @PathVariable("orderNumber") String orderNumber
     ) {
+        Long userId = SecurityUtils.getCurrentUserId();
         log.info("Controller:->cancelOrder | userId: {}, orderNumber: {}", userId, orderNumber);
         boolean result = orderAppService.cancelOrder(userId, orderNumber);
         return ResultUtil.data(result);

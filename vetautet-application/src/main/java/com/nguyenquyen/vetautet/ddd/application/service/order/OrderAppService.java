@@ -15,5 +15,6 @@ public interface OrderAppService {
     PagedOrdersDTO findPage(String yearMonth, long lastId, int limit);
     boolean cancelOrder(Long userId, String orderNumber);
     boolean systemCancelOrder(String orderNumber, String yearMonth);
+    boolean processVnPayIpn(String orderNumber, String yearMonth);
 
 }

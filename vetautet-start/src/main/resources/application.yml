@@ -13,6 +13,12 @@ spring:
   # application
   application:
     name: vetautet
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          secret-key: c3VwZXItc2VjcmV0LWtleS10aGF0LW11c3QtYmUtYXQtbGVhc3QtMjU2LWJpdHM=
+
   #DBS
   datasource:
     hikari:
@@ -31,7 +37,7 @@ spring:
 
   jpa:
     database: mysql
-    show-sql: true
+    show-sql: false
     hibernate:
       ddl-auto: none  # Không tự động tạo/ cập nhật bảng thay vì update
   #    properties:
@@ -128,3 +134,13 @@ management:
         "[http.server.requests]": 0.5, 0.95, 0.99
       slo:
         "[http.server.requests]": 100ms, 500ms, 1s, 2s, 5s
+
+app:
+  google:
+    client-id: "598903688201-tmhrd1s1buk0o75ti0fi4sk2jfmusi8s.apps.googleusercontent.com"
+
+vnpay:
+  tmn-code: 96JYKRUU
+  hash-secret: IJQGTCHSHTMKSGECRDJPUBGUDGHIBIHW
+  url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:5173/booking-success
