@@ -1,6 +1,6 @@
-# xxxx.com — Flash Sale Ticket System
+# VetAuTet — Flash Sale Ticket System
 
-Project thực hành xây dựng hệ thống đặt vé flash sale chịu tải cao theo DDD. Bài toán chính là bán vé sự kiện — stock giới hạn, nhiều người đặt cùng lúc, không được oversell, server không được sập.
+Project thực hành xây dựng hệ thống đặt vé tàu/sự kiện flash sale chịu tải cao theo kiến trúc **DDD (Domain-Driven Design)**. Bài toán chính là bán vé sự kiện/vé tàu dịp Tết — stock giới hạn, lượng truy cập đồng thời khổng lồ (High Concurrency), đảm bảo không bao giờ bán vượt vé (No Overselling) và server không bị quá tải.
 
 ---
 
@@ -15,7 +15,7 @@ Project thực hành xây dựng hệ thống đặt vé flash sale chịu tải
 
 ![DDD Module Layers](https://res.cloudinary.com/shopdev/image/upload/v1781839099/Screenshot_2026-06-19_at_10.18.13_smtu6l.png)
 
-> `xxxx-domain` không phụ thuộc layer nào khác — infrastructure implement interface của domain, không phải ngược lại.
+> `vetautet-domain` không phụ thuộc layer nào khác — infrastructure implement interface của domain, tuân thủ Dependency Inversion.
 
 ---
 
@@ -28,13 +28,13 @@ Project thực hành xây dựng hệ thống đặt vé flash sale chịu tải
 ## Module structure
 
 ```
-xxxx.com
-├── xxxx-start          # Spring Boot entry point, application.yml
-├── xxxx-controller     # REST controllers, DTOs, response wrapper
-├── xxxx-application    # Use cases, cron jobs, app services
-├── xxxx-domain         # Entities, domain services, repository interfaces
-├── xxxx-infrastructure # JPA, Redis, Kafka, Redisson implementations
-└── xxxx.fe.com         # Frontend — React + Vite
+vetautet
+├── vetautet-start          # Spring Boot entry point, cấu hình hệ thống (application.yml)
+├── vetautet-controller     # REST controllers, DTOs, Webhook (VNPay IPN), Security
+├── vetautet-application    # Business Use Cases, Cron jobs, App services, Distributed Locks
+├── vetautet-domain         # Entities, Domain services, Repository interfaces
+├── vetautet-infrastructure # JPA, Redis, Kafka, VNPay Gateway, Redisson, OAuth2
+└── vetautet.fe.com         # Frontend — React + Vite + TailwindCSS
 ```
 
 ---
@@ -43,16 +43,16 @@ xxxx.com
 
 | | |
 |---|---|
-| Java 21 | Virtual Threads bật sẵn |
-| Spring Boot 3.3.5 | |
-| MySQL 8 | HikariCP pool size 100 |
-| Redis | Lettuce, dùng cho stock cache + distributed lock (Redisson) |
-| Kafka 3.7 | KRaft mode — không cần Zookeeper |
-| Caffeine | Local cache L1 |
-| Resilience4j | Circuit Breaker + Rate Limiter |
-| Prometheus + Grafana | Metrics |
-| ELK | Log aggregation |
-| k6 + JMeter | Load testing |
+| **Backend Core** | Java 21 (Virtual Threads), Spring Boot 3.3.5, Spring Security |
+| **Architecture** | Domain-Driven Design (DDD), SAGA, Outbox Pattern |
+| **Database** | MySQL 8 (HikariCP pool size 100) |
+| **Cache & Lock** | Redis (Lettuce), Caffeine (Local L1), Redisson (Distributed Lock) |
+| **Message Broker** | Kafka 3.7 (KRaft mode — không cần Zookeeper) |
+| **Resilience** | Resilience4j (Circuit Breaker + Rate Limiter) |
+| **3rd Party API** | VNPay Gateway (Payment), Google OAuth2 (SSO Login) |
+| **Monitoring** | Prometheus, Grafana, ELK Stack |
+| **Load Testing** | k6, JMeter |
+| **Frontend** | ReactJS, Vite, TailwindCSS |
 
 ---
 
@@ -86,7 +86,7 @@ docker compose -f docker-compose-kafka.yml up -d
 
 ```bash
 mvn clean package -DskipTests
-java -jar xxxx-start/target/xxxx-start-1.0-SNAPSHOT.jar
+java -jar vetautet-start/target/vetautet-start-1.0-SNAPSHOT.jar
 ```
 
 App chạy tại `http://localhost:1122`. Check health: `curl localhost:1122/actuator/health`
@@ -94,7 +94,7 @@ App chạy tại `http://localhost:1122`. Check health: `curl localhost:1122/act
 ### 3. Frontend
 
 ```bash
-cd xxxx.fe.com && npm install && npm run dev
+cd vetautet.fe.com && npm install && npm run dev
 # → http://localhost:5173
 ```
 
@@ -156,7 +156,7 @@ OutboxPublisherJob (fixedDelay=1s)
       cần consumer idempotent chặt hơn vì failure window lớn hơn
 ```
 
-File: `xxxx-application/.../cronjob/OutboxPublisherJob.java`
+File: `vetautet-application/.../cronjob/OutboxPublisherJob.java`
 
 ```sql
 outbox_event (id, aggregate_id, payload, status, created_at, published_at)
