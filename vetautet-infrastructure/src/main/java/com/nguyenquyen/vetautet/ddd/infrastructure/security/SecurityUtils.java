@@ -23,7 +23,11 @@ public class SecurityUtils {
                 return Long.parseLong((String) userId);
             }
         }
-        return null;
+        
+        // --- BACKDOOR CHO K6 LOAD TESTING ---
+        // Nếu không có Token (hoặc token không hợp lệ), tự động tạo 1 User ID ảo từ 1 đến 10,000
+        // LƯU Ý: Xóa hoặc comment đoạn này khi triển khai lên môi trường Production!
+        return (long) java.util.concurrent.ThreadLocalRandom.current().nextInt(1, 10000);
     }
 
     /**

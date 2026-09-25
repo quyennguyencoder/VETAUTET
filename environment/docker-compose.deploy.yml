@@ -1,0 +1,74 @@
+version: '3.8'
+
+networks:
+  vetautet-network:
+    driver: bridge
+
+services:
+  # 1. Database MySQL (Ép dùng ít RAM)
+  mysql:
+    image: mysql:8.0
+    container_name: vetautet-mysql
+    restart: unless-stopped
+    command: [
+      '--character-set-server=utf8mb4',
+      '--collation-server=utf8mb4_unicode_ci',
+      '--skip-character-set-client-handshake',
+      '--innodb-buffer-pool-size=64M'
+    ]
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: vetautet
+    ports:
+      - "3316:3306"
+    networks:
+      - vetautet-network
+
+  # 2. Redis Cache
+  redis:
+    image: redis:latest
+    container_name: vetautet-redis
+    restart: unless-stopped
+    ports:
+      - "6319:6379"
+    networks:
+      - vetautet-network
+
+  # 3. Apache Kafka (Ép dùng tối đa 256MB RAM)
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: vetautet-kafka
+    restart: unless-stopped
+    ports:
+      - "9094:9094"
+    environment:
+      KAFKA_HEAP_OPTS: "-Xmx256M -Xms256M"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://vetautet-kafka:9092,EXTERNAL://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@vetautet-kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - vetautet-network
+
+  # 4. Ứng dụng Backend (Ép Spring Boot dùng tối đa 300MB RAM)
+  vetautet-app:
+    # Nhớ thay <your_dockerhub_username> bằng username thực tế của bạn
+    image: <your_dockerhub_username>/vetautet:latest
+    container_name: vetautet-backend
+    restart: unless-stopped
+    ports:
+      - "1122:1122"
+    environment:
+      JAVA_TOOL_OPTIONS: "-Xmx300m -Xms300m"
+    depends_on:
+      - mysql
+      - redis
+      - kafka
+    network_mode: "host"

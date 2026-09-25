@@ -73,7 +73,10 @@ export const ticketService = {
   createBooking: async ({ ticketId, quantity }) => {
     try {
       const response = await orderApi.post('/cas', { ticketId, quantity });
-      return response.data.result; // { success, placeOrderTaskId, code, message }
+      if (!response.data.success) {
+        return { success: false, message: response.data.message, code: response.data.code };
+      }
+      return response.data.result; 
     } catch (error) {
       console.error('Error creating booking:', error);
       throw error;

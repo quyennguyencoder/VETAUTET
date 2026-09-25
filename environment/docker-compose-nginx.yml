@@ -167,3 +167,36 @@ services:
       - pre-event-network
     depends_on:
       - elasticsearch
+
+  # Thêm App Java
+  app:
+    image: ${DOCKER_USERNAME:-yourusername}/vetautet:latest
+    container_name: pre-event-app
+    ports:
+      - "1122:1122"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ticket?useUnicode=true&characterEncoding=utf-8&allowPublicKeyRetrieval=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=root1234
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PORT=6379
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - pre-event-network
+
+  # Thêm Nginx
+  nginx:
+    image: nginx:alpine
+    container_name: pre-event-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/static:/app/static
+    depends_on:
+      - app
+    networks:
+      - pre-event-network

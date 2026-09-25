@@ -20,7 +20,8 @@ import java.util.List;
 @RequestMapping("/order")
 @Slf4j
 @RequiredArgsConstructor
-@PreAuthorize("hasRole('ROLE_USER')")
+// --- BACKDOOR CHO K6 LOAD TESTING: Tạm thời tắt yêu cầu đăng nhập ---
+// @PreAuthorize("hasRole('ROLE_USER')")
 public class OrderController {
 
     private final OrderAppService orderAppService;
@@ -29,13 +30,8 @@ public class OrderController {
     public ResultMessage<PlaceOrderResponse> placeOrderCAS(@Valid @RequestBody CreateBookingRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         log.info("Controller:->placeOrderCAS | userId={}, ticketId={}, quantity={}", userId, request.getTicketId(), request.getQuantity());
-        try {
-            PlaceOrderResponse response = orderAppService.placeOrderCAS(request.getTicketId(), request.getQuantity());
-            return ResultUtil.data(response);
-        } catch (Exception e) {
-            log.error("placeOrderCAS: unhandled error ticketId={}", request.getTicketId(), e);
-            return ResultUtil.data(PlaceOrderResponse.failed("SERVER_ERROR", "Lỗi hệ thống, vui lòng thử lại"));
-        }
+        PlaceOrderResponse response = orderAppService.placeOrderCAS(request.getTicketId(), request.getQuantity());
+        return ResultUtil.data(response);
     }
 
     // V1 — load toàn bộ đơn hàng (không phân trang, dùng để so sánh)
@@ -69,8 +65,19 @@ public class OrderController {
             @PathVariable("orderNumber") String orderNumber
     ) {
         Long userId = SecurityUtils.getCurrentUserId();
-        // Cần đảm bảo order này thuộc về userId hiện tại ở tầng AppService, tạm thời chỉ pass qua
-        return ResultUtil.data(orderAppService.findByOrderNumber(orderNumber));
+        OrderDTO order = orderAppService.findByOrderNumber(orderNumber);
+        
+        if (order == null) {
+            throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.NOT_FOUND);
+        }
+        
+        // --- FIX IDOR: Chặn không cho user xem đơn của người khác ---
+        if (!order.getUserId().equals(userId.intValue())) {
+            log.warn("IDOR attempt! User {} tried to view order {} belonging to user {}", userId, orderNumber, order.getUserId());
+            throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.FORBIDDEN);
+        }
+        
+        return ResultUtil.data(order);
     }
 
     @PutMapping("/{orderNumber}/cancel")

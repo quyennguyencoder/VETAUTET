@@ -27,7 +27,7 @@ const TICKET_ID   = parseInt(__ENV.TICKET_ID   || '3');
 const QUANTITY    = parseInt(__ENV.QUANTITY    || '1');
 const ENDPOINT    = __ENV.ENDPOINT    || '/order/cas';   // thay /order/mq để so sánh
 const STOCK       = parseInt(__ENV.STOCK       || '2000');
-const TOTAL_USERS = parseInt(__ENV.TOTAL_USERS || '30000'); // requests gửi đến server, không phải VUs
+const TOTAL_USERS = parseInt(__ENV.TOTAL_USERS || '100000'); // requests gửi đến server, không phải VUs
 // VUS: CAS bị giới hạn bởi pool (50) → dùng 80~100
 //      MQ trả về ngay          → dùng 300~500
 const VUS         = parseInt(__ENV.VUS         || '500');
@@ -80,22 +80,24 @@ export default function () {
     return;
   }
 
-  let result;
+  let success, code, msg;
   try {
-    result = res.json('result');
+    success = res.json('success');
+    code = res.json('code');
+    msg = res.json('message');
   } catch (_) {
     errorCount.add(1);
     console.warn(`[ERROR] Cannot parse JSON: ${res.body?.substring(0, 200)}`);
     return;
   }
 
-  if (result?.success === true) {
+  if (success === true) {
     successOrders.add(1);
-  } else if (result?.code === 'OUT_OF_STOCK') {
+  } else if (code === 400 && msg && msg.includes('Hết vé')) {
     outOfStockCount.add(1);
   } else {
     errorCount.add(1);
-    console.warn(`[UNEXPECTED] code=${result?.code} | msg=${result?.message}`);
+    console.warn(`[UNEXPECTED] code=${code} | msg=${msg}`);
   }
 }
 

@@ -52,41 +52,36 @@ public class OrderAppServiceImpl implements OrderAppService {
         try {
             int redisResult = ticketStockCacheService.decreaseStockCacheByLUA(ticketId, quantity);
             if (redisResult == -1) {
-                // Cache chưa được warm → load từ DB rồi retry
                 log.info("placeOrderCAS: cache miss for ticketId={}, warming up...", ticketId);
                 boolean warmed = ticketStockCacheService.addStockAvailableToCache(ticketId);
                 if (!warmed) {
-                    return PlaceOrderResponse.failed("TICKET_NOT_FOUND", "Không tìm thấy sự kiện");
+                    throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.TICKET_NOT_FOUND);
                 }
                 redisResult = ticketStockCacheService.decreaseStockCacheByLUA(ticketId, quantity);
             }
             if (redisResult == 0) {
                 log.info("placeOrderCAS: Redis stock insufficient for ticketId={}", ticketId);
-                return PlaceOrderResponse.failed("OUT_OF_STOCK", "Hết vé, vui lòng thử lại sau");
+                throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.OUT_OF_STOCK);
             }
             isRedisDecremented = true;
 
-            // Redis Lua đã là atomic gate → DB chỉ cần safety net, không cần CAS
             boolean isDecreaseStockSuccess = ticketStockDomainService.decreaseStockByAtomicUpdate(ticketId, quantity);
             if (!isDecreaseStockSuccess) {
                 ticketStockCacheService.increaseStockCache(ticketId, quantity);
                 log.warn("placeOrderCAS: DB update failed, rolled back Redis for ticketId={}", ticketId);
-                return PlaceOrderResponse.failed("STOCK_CONFLICT", "Đặt vé không thành công, vui lòng thử lại");
+                throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.STOCK_CONFLICT);
             }
 
             long unitPrice = ticketStockCacheService.getEffectivePrice(ticketId);
             if (unitPrice <= 0) {
                 ticketStockCacheService.increaseStockCache(ticketId, quantity);
-//                tickerOrderDomainService.increaseStock(ticketId, quantity); // not TX Trong trường hợp này, nếu không lấy được giá thì có thể do dữ liệu không hợp lệ hoặc lỗi hệ thống. Việc rollback stock
                 log.warn("placeOrderCAS: price not found for ticketId={}, rolled back Redis", ticketId);
-                return PlaceOrderResponse.failed("PRICE_NOT_FOUND", "Không thể xác định giá vé");
+                throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.PRICE_NOT_FOUND);
             }
 
             Long userId = com.nguyenquyen.vetautet.ddd.infrastructure.security.SecurityUtils.getCurrentUserId();
             if (userId == null) {
-                 // Fallback or just let it fail
-                 // userId = (long) ThreadLocalRandom.current().nextInt(1, 10);
-                 throw new RuntimeException("Unauthorized user");
+                 throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.UNAUTHORIZED);
             }
             String orderNumber = "OKX-SGN-" + userId + "-" + ORDER_SEQ.incrementAndGet() + "-" + System.currentTimeMillis();
             String nTable = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMM"));
@@ -102,17 +97,18 @@ public class OrderAppServiceImpl implements OrderAppService {
             order.setOrderNotes("Order -> Pending");
             orderDomainService.insertOrder(nTable, order);
 
-            // Đăng ký auto-cancel: nếu không thanh toán trong PAYMENT_TIMEOUT_MINUTES, OrderTimeoutWorker sẽ tự hủy
             orderCancelScheduleService.scheduleTimeout(orderNumber, nTable, ticketId.intValue(), quantity);
 
             log.info("placeOrderCAS: success | ticketId={} orderNumber={}", ticketId, orderNumber);
             return PlaceOrderResponse.success(orderNumber);
 
+        } catch (com.nguyenquyen.vetautet.ddd.domain.exception.AppException e) {
+            // Ném tiếp các lỗi nghiệp vụ đã định nghĩa
+            throw e;
         } catch (Exception e) {
             log.error("placeOrderCAS: error for ticketId={}", ticketId, e);
             if (isRedisDecremented) ticketStockCacheService.increaseStockCache(ticketId, quantity);
-//            if (isDbDecremented)    tickerOrderDomainService.increaseStock(ticketId, quantity); // not TX
-            return PlaceOrderResponse.failed("SERVER_ERROR", "Lỗi hệ thống, vui lòng thử lại");
+            throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.SYSTEM_ERROR);
         }
     }
 

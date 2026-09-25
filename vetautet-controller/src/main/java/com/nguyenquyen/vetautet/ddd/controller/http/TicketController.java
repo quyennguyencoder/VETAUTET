@@ -32,13 +32,8 @@ public class TicketController {
     @GetMapping("/active")
     public ResultMessage<List<TicketDTO>> getAllActiveTickets() {
         log.info("Fetching all active tickets");
-        try {
-            List<TicketDTO> tickets = ticketAppService.getAllActiveTickets();
-            return ResultUtil.data(tickets);
-        } catch (Exception e) {
-            log.error("Error fetching active tickets", e);
-            return ResultUtil.error(500, "Failed to fetch active tickets");
-        }
+        List<TicketDTO> tickets = ticketAppService.getAllActiveTickets();
+        return ResultUtil.data(tickets);
     }
 
     /**
@@ -70,39 +65,17 @@ public class TicketController {
     public ResultMessage<TicketDTO> createTicket(
             @Valid @RequestBody CreateTicketFullRequest request) {
         log.info("Creating ticket: {}", request.getTicket().getName());
-        try {
-            // ✅ map request -> command
-            CreateTicketCommand ticketCmd =
-                    TicketControllerMapper.toCommand(request.getTicket());
-
-            CreateTicketDetailCommand detailCmd =
-                    TicketControllerMapper.toDetailCommand(request.getDetail());
-
-            // ✅ gọi service bằng command
-            TicketDTO ticketDTO =
-                    ticketAppService.createTicket(ticketCmd, detailCmd);
-
-            return ResultUtil.data(ticketDTO);
-        } catch (IllegalArgumentException e) {
-            log.warn("Validation error: {}", e.getMessage());
-            return ResultUtil.error(500, e.getMessage());
-        } catch (Exception e) {
-            log.error("Error creating ticket", e);
-            return ResultUtil.error(500, "Failed to create ticket");
-        }
+        CreateTicketCommand ticketCmd = TicketControllerMapper.toCommand(request.getTicket());
+        CreateTicketDetailCommand detailCmd = TicketControllerMapper.toDetailCommand(request.getDetail());
+        TicketDTO ticketDTO = ticketAppService.createTicket(ticketCmd, detailCmd);
+        return ResultUtil.data(ticketDTO);
     }
 
     @GetMapping("/{ticketId}")
-    public ResultMessage<TicketDTO> getTicket(
-            @PathVariable("ticketId") Long ticketId) {
+    public ResultMessage<TicketDTO> getTicket(@PathVariable("ticketId") Long ticketId) {
         log.info("Fetching ticket: {}", ticketId);
-        try {
-            TicketDTO ticketDTO = ticketAppService.getTicketById(ticketId);
-            return ResultUtil.data(ticketDTO);
-        } catch (Exception e) {
-            log.error("Error fetching ticket", e);
-            return ResultUtil.error(500, e.getMessage());
-        }
+        TicketDTO ticketDTO = ticketAppService.getTicketById(ticketId);
+        return ResultUtil.data(ticketDTO);
     }
 
     @PutMapping("/{ticketId}")
@@ -110,54 +83,28 @@ public class TicketController {
             @PathVariable("ticketId") Long ticketId,
             @Valid @RequestBody UpdateTicketRequest updateRequest) {
         log.info("Updating ticket: {}", ticketId);
-        try {
-           // TicketDTO ticketDTO = ticketAppService.updateTicket(ticketId, updateRequest);
-            return ResultUtil.data(null);
-        } catch (IllegalArgumentException e) {
-            log.warn("Validation error: {}", e.getMessage());
-            return ResultUtil.error(500, e.getMessage());
-        } catch (Exception e) {
-            log.error("Error updating ticket", e);
-            return ResultUtil.error(500, e.getMessage());
-        }
+        // TicketDTO ticketDTO = ticketAppService.updateTicket(ticketId, updateRequest);
+        return ResultUtil.data(null);
     }
 
     @PutMapping("/{ticketId}/active")
-    public ResultMessage<TicketDTO> activeTicket(
-            @PathVariable("ticketId") Long ticketId) {
+    public ResultMessage<TicketDTO> activeTicket(@PathVariable("ticketId") Long ticketId) {
         log.info("Activating ticket: {}", ticketId);
-        try {
-            TicketDTO ticketDTO = ticketAppService.activeTicket(ticketId);
-            return ResultUtil.data(ticketDTO);
-        } catch (Exception e) {
-            log.error("Error activating ticket", e);
-            return ResultUtil.error(500, e.getMessage());
-        }
+        TicketDTO ticketDTO = ticketAppService.activeTicket(ticketId);
+        return ResultUtil.data(ticketDTO);
     }
 
     @PutMapping("/{ticketId}/inactive")
-    public ResultMessage<TicketDTO> inactiveTicket(
-            @PathVariable("ticketId") Long ticketId) {
+    public ResultMessage<TicketDTO> inactiveTicket(@PathVariable("ticketId") Long ticketId) {
         log.info("Inactivating ticket: {}", ticketId);
-        try {
-            TicketDTO ticketDTO = ticketAppService.inactiveTicket(ticketId);
-            return ResultUtil.data(ticketDTO);
-        } catch (Exception e) {
-            log.error("Error inactivating ticket", e);
-            return ResultUtil.error(500, e.getMessage());
-        }
+        TicketDTO ticketDTO = ticketAppService.inactiveTicket(ticketId);
+        return ResultUtil.data(ticketDTO);
     }
 
     @DeleteMapping("/{ticketId}")
-    public ResultMessage<String> deleteTicket(
-            @PathVariable("ticketId") Long ticketId) {
+    public ResultMessage<String> deleteTicket(@PathVariable("ticketId") Long ticketId) {
         log.info("Deleting ticket: {}", ticketId);
-        try {
-            ticketAppService.deleteTicket(ticketId);
-            return ResultUtil.data("Ticket deleted successfully");
-        } catch (Exception e) {
-            log.error("Error deleting ticket", e);
-            return ResultUtil.error(500, e.getMessage());
-        }
+        ticketAppService.deleteTicket(ticketId);
+        return ResultUtil.data("Ticket deleted successfully");
     }
 }

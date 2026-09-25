@@ -40,27 +40,26 @@ public class OrderMQAppServiceImpl implements OrderMQAppService {
             log.info("placeOrderMQ: cache miss for ticketId={}, warming up...", ticketId);
             boolean warmed = ticketStockCacheService.addStockAvailableToCache(ticketId);
             if (!warmed) {
-                return failedQueue("TICKET_NOT_FOUND", "Không tìm thấy sự kiện");
+                throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.TICKET_NOT_FOUND);
             }
             redisResult = ticketStockCacheService.decreaseStockCacheByLUA(ticketId, quantity);
         }
         if (redisResult == 0) {
             log.info("placeOrderMQ: Redis OOS for ticketId={}", ticketId);
-            return failedQueue("OUT_OF_STOCK", "Hết vé");
+            throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.OUT_OF_STOCK);
         }
 
         long unitPrice = ticketStockCacheService.getEffectivePrice(ticketId);
         if (unitPrice <= 0) {
             ticketStockCacheService.increaseStockCache(ticketId, quantity);
-            return failedQueue("PRICE_NOT_FOUND", "Không thể xác định giá vé");
+            throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.PRICE_NOT_FOUND);
         }
 
         // 2. Ghi order_queue + outbox_event trong cùng 1 transaction
         // Nếu bất kỳ write nào fail → cả 2 rollback → không còn trạng thái nửa vời
         Long currentUserId = com.nguyenquyen.vetautet.ddd.infrastructure.security.SecurityUtils.getCurrentUserId();
         if (currentUserId == null) {
-            // int userId = ThreadLocalRandom.current().nextInt(1, 10);
-            throw new RuntimeException("Unauthorized user");
+            throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.UNAUTHORIZED);
         }
         int userId = currentUserId.intValue();
         String token = "MQ-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
@@ -98,11 +97,13 @@ public class OrderMQAppServiceImpl implements OrderMQAppService {
             log.info("placeOrderMQ: queued token={} ticketId={}", token, ticketId);
             return queue;
 
+        } catch (com.nguyenquyen.vetautet.ddd.domain.exception.AppException e) {
+            throw e;
         } catch (Exception e) {
             // Transaction đã rollback — compensate Redis để không trừ stock oan
             ticketStockCacheService.increaseStockCache(ticketId, quantity);
             log.error("placeOrderMQ: transaction failed, compensated Redis for ticketId={}", ticketId, e);
-            return failedQueue("INTERNAL_ERROR", "Lỗi hệ thống, vui lòng thử lại");
+            throw new com.nguyenquyen.vetautet.ddd.domain.exception.AppException(com.nguyenquyen.vetautet.ddd.domain.exception.ErrorCode.SYSTEM_ERROR);
         }
     }
 
