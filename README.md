@@ -1,4 +1,4 @@
-# VetAuTet — Flash Sale Ticket System
+# TicketPro — Flash Sale Ticket System
 
 Project thực hành xây dựng hệ thống đặt vé tàu/sự kiện flash sale chịu tải cao theo kiến trúc **DDD (Domain-Driven Design)**. Bài toán chính là bán vé sự kiện/vé tàu dịp Tết — stock giới hạn, lượng truy cập đồng thời khổng lồ (High Concurrency), đảm bảo không bao giờ bán vượt vé (No Overselling) và server không bị quá tải.
 
